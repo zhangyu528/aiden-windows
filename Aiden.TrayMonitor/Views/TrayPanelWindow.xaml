@@ -1,0 +1,51 @@
+<Window x:Class="Aiden.TrayMonitor.Views.TrayPanelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Aiden Monitor"
+        Width="340"
+        Height="240"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True">
+  <Border CornerRadius="12"
+          Padding="16"
+          Background="#FF1E2633"
+          BorderThickness="1"
+          BorderBrush="#FF3A4D69">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <DockPanel Grid.Row="0">
+        <TextBlock Text="Aiden Telemetry"
+                   Foreground="White"
+                   FontWeight="SemiBold"
+                   FontSize="16" />
+      </DockPanel>
+
+      <StackPanel Grid.Row="1" Margin="0,12,0,8">
+        <TextBlock Text="{Binding InputTokens, StringFormat=Input Tokens: {0:N0}}" Foreground="White" Margin="0,2"/>
+        <TextBlock Text="{Binding OutputTokens, StringFormat=Output Tokens: {0:N0}}" Foreground="White" Margin="0,2"/>
+        <TextBlock Text="{Binding SessionCostUsd, StringFormat=Cost USD: {0:F4}}" Foreground="White" Margin="0,2"/>
+        <TextBlock Text="{Binding ContextWindowM, StringFormat=Context (M): {0:F3}}" Foreground="White" Margin="0,2"/>
+        <TextBlock Text="{Binding StatusText, StringFormat=Status: {0}}" Foreground="White" Margin="0,2"/>
+      </StackPanel>
+
+      <DockPanel Grid.Row="2">
+        <Button Content="刷新"
+                Width="80"
+                Height="28"
+                Command="{Binding RefreshCommand}" />
+        <TextBlock Text="{Binding UpdatedAt, StringFormat=更新时间: {0}}"
+                   Foreground="#FFB8C3D6"
+                   Margin="12,6,0,0" />
+      </DockPanel>
+    </Grid>
+  </Border>
+</Window>
