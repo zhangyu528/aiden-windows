@@ -26,9 +26,12 @@ public partial class App : System.Windows.Application
             .ConfigureServices((ctx, services) =>
             {
                 services.Configure<VmOptions>(ctx.Configuration.GetSection("Vm"));
+                services.Configure<CollectorOptions>(ctx.Configuration.GetSection("Collector"));
                 services.AddHttpClient();
 
                 services.AddSingleton<VmClient>();
+                services.AddSingleton<VmProcessService>();
+                services.AddSingleton<CollectorProcessService>();
                 services.AddSingleton<TelemetryService>();
                 services.AddSingleton<WindowPositionService>();
                 services.AddSingleton<TrayPanelViewModel>();
@@ -38,6 +41,12 @@ public partial class App : System.Windows.Application
             .Build();
 
         await _host.StartAsync();
+
+        var vmProcess = _host.Services.GetRequiredService<VmProcessService>();
+        await vmProcess.EnsureStartedAsync(CancellationToken.None);
+
+        var collectorProcess = _host.Services.GetRequiredService<CollectorProcessService>();
+        await collectorProcess.EnsureStartedAsync(CancellationToken.None);
 
         var telemetry = _host.Services.GetRequiredService<TelemetryService>();
         telemetry.Start();
@@ -52,6 +61,12 @@ public partial class App : System.Windows.Application
         {
             var telemetry = _host.Services.GetService<TelemetryService>();
             telemetry?.Stop();
+
+            var collectorProcess = _host.Services.GetService<CollectorProcessService>();
+            collectorProcess?.StopIfOwned();
+
+            var vmProcess = _host.Services.GetService<VmProcessService>();
+            vmProcess?.StopIfOwned();
 
             var tray = _host.Services.GetService<TrayIconService>();
             tray?.Dispose();
