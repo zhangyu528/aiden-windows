@@ -131,18 +131,27 @@ public sealed class VmProcessService
             for (var i = 0; i < 8 && dir is not null; i++, dir = dir.Parent)
             {
                 var runtimeVm = Path.Combine(dir.FullName, "runtime", "vm");
-                if (!Directory.Exists(runtimeVm))
+                var candidates = new[]
                 {
-                    continue;
-                }
+                    runtimeVm,
+                    Path.Combine(dir.FullName, "Aiden.TrayMonitor", "runtime", "vm")
+                };
 
-                var selected = Directory.GetFiles(runtimeVm, "victoria-metrics.exe", SearchOption.AllDirectories)
-                    .Select(path => new FileInfo(path))
-                    .OrderByDescending(f => f.LastWriteTimeUtc)
-                    .FirstOrDefault();
-                if (selected is not null)
+                foreach (var candidate in candidates)
                 {
-                    return selected.FullName;
+                    if (!Directory.Exists(candidate))
+                    {
+                        continue;
+                    }
+
+                    var selected = Directory.GetFiles(candidate, "victoria-metrics.exe", SearchOption.AllDirectories)
+                        .Select(path => new FileInfo(path))
+                        .OrderByDescending(f => f.LastWriteTimeUtc)
+                        .FirstOrDefault();
+                    if (selected is not null)
+                    {
+                        return selected.FullName;
+                    }
                 }
             }
         }
