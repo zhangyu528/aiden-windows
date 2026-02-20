@@ -1,111 +1,97 @@
-# Aiden �������̼�� FRD����ǰ�汾��
+﻿# Aiden 本地托盘监控 FRD（产品需求）
 
-## 1. Ŀ��
-�� Windows ���ṩ Gemini CLI telemetry �����̿��ӻ����ʹ���չʾ�����������ݣ���֧�ֹر� UI �������̨�ɼ���
+## 1. 产品目标
+在 Windows 提供低打扰的托盘监控体验，帮助用户查看 Gemini CLI 的核心 telemetry 消耗，并在关闭 UI 后保持采集连续性。
 
-## 2. ��Χ
-### 2.1 In Scope
-- �������չʾ��Input��Output��User��User Active��Cost��Context��Status��
-- ��·��Gemini CLI -> OTel Collector -> VictoriaMetrics��
-- �û�����̨�ػ����̣�RuntimeAgent���й� VM / Collector��
-- �Զ�ˢ�����ֶ�ˢ�¡�
-- ͣ����������ͣ��װ����ж���������� Agent �� HKCU Run����
+## 2. 用户与场景
+- 目标用户：日常使用 Gemini CLI 的个人/研发用户。
+- 核心场景：
+  - 边使用 CLI 边查看实时消耗。
+  - 临时关闭托盘 UI，但希望后台继续采集，后续再打开查看。
 
-### 2.2 Out of Scope
-- Windows ���񣨹���ԱȨ�ޣ��йܡ�
-- �޷���������
-- �ն���־չʾ��
-- ���������ܷ�����
-- Web ҳ�档
+## 3. 范围
+### 3.1 In Scope
+- 托盘面板展示：Input、Output、User、User Active、Cost、Context、Status。
+- 手动刷新与自动刷新。
+- 关闭 UI 后后台采集持续。
+- 升级与卸载流程的用户可预期行为（允许短时中断）。
 
-## 3. ��������
-### 3.1 Gemini CLI��`~/.gemini/settings.json`��
-- `telemetry.enabled = true`
-- `telemetry.target = "local"`
-- `telemetry.useCollector = true`
-- `telemetry.otlpProtocol = "grpc"`
-- `telemetry.otlpEndpoint = "http://127.0.0.1:4317"`
-- `telemetry.logPrompts = false`
+### 3.2 Out of Scope
+- 趋势分析与长期报表。
+- 终端日志展示。
+- 无缝热升级。
 
-### 3.2 Ӧ�����ò��
-- `runtime.shared.json`����������
-  - `Vm.*`��BaseUrl/Port/QueryEndpoint/HealthEndpoint/OtlpEndpoint/ServiceNameFilter��
-  - `Collector.*`��BaseUrl/GrpcPort/HttpPort/HealthPort��
-  - `Agent.*`��Enabled/AutoStartOnLogin/HealthCheckSeconds/BackoffMinSeconds/BackoffMaxSeconds/StatusPort��
-- `Aiden.TrayMonitor/appsettings.json`��Tray ר������
-  - `Vm.MaxHistoryDays`
-  - `Vm.PollSeconds`
-  - `Pricing.*`
-  - `ModelCapability.*`
-- `Aiden.RuntimeAgent/agentsettings.json`��Agent ר�������
+## 4. 功能需求
+### 4.1 托盘与面板
+- 用户可通过托盘图标打开/关闭面板。
+- 面板必须展示以下字段：
+  - Input Tokens
+  - Output Tokens
+  - Current User Email
+  - User Active
+  - Cost USD
+  - Context（M + %）
+  - Status
+- 支持手动刷新。
 
-## 4. ��������
-### 4.1 չʾ�ֶ�
-- Input Tokens
-- Output Tokens
+### 4.2 监控数据需求（字段级）
+- Input Tokens / Output Tokens
+  - 展示当前用户相关的 token 消耗结果。
+  - 当当前用户未知时，显示 `N/A`。
 - Current User Email
+  - 展示最近可识别用户邮箱。
+  - 无可识别用户时，显示 `Unknown`。
 - User Active
+  - 展示最近活跃距今天数，格式 `X days`。
+  - 当前用户未知时，显示 `N/A`。
 - Cost USD
-- Context��M + %��
+  - 展示按模型单价计算的会话成本，单位 USD。
+  - 无数据时显示 `0`（或按 UI 规则显示占位）。
+- Context（M + %）
+  - 展示当前活跃会话的上下文使用量（M）与占比（%）。
+  - 用户未知、会话未知或模型能力缺失时显示 `N/A`。
 - Status
+  - 展示当前监控链路可用状态（Online / Offline）。
+  - 当查询不可用或关键依赖不可用时为 `Offline`。
 
-### 4.2 ˢ����Ϊ
-- �Զ���ѯ���� `Vm.PollSeconds`��
-- �ֶ�ˢ�£���� Refresh ��ť��
+### 4.3 后台连续采集
+- 用户点击 Exit 时，仅关闭 UI，不中断后台采集。
+- 用户重新打开 UI 时，可查看期间持续产生的数据结果。
 
-### 4.3 ����ʱ��Ϊ
-- Tray ����ʱȷ�� RuntimeAgent ���в�д�� HKCU Run�������ã���
-- RuntimeAgent �ػ� VM / Collector��
-- Tray Exit ���ر� UI����ֹͣ RuntimeAgent��
-- Runtime ������ʱ�Զ�������ָ���˱ܣ���
+### 4.4 刷新与时效
+- 自动刷新按配置轮询周期执行（默认 5 秒）。
+- 手动刷新应立即触发一次数据拉取。
+- 每次刷新后应更新“最后更新时间”。
 
-## 5. ָ��ھ�
-### 5.1 Input / Output
-- ��ѯ���ԣ�˲ʱ���ȣ���ֵ���� `last_over_time`��
-- `lookbackDays = min(ceil(now - activeAt) + 1, MaxHistoryDays)`��
-  ���������û���`lookbackDays = MaxHistoryDays`��
-- �û�δ֪��`CurrentUserEmail=Unknown`��ʱ��ʾ `N/A`��
+### 4.5 运行状态可见性
+- 用户可查看 Runtime 状态。
+- 当后台运行异常时，状态需有可感知反馈（如 Offline）。
 
-### 5.2 Current User
-- ȡ���һ���ϱ��û���˲ʱ���ȣ����� `MaxHistoryDays` ���ڣ���
-- ��������ʾ `Unknown`��
+### 4.6 升级与卸载体验
+- 升级后系统可恢复可用（允许短时中断）。
+- 卸载后不应残留后台自启动行为。
+- 卸载不自动修改用户 CLI telemetry 配置。
 
-### 5.3 User Active
-- ʹ�� Current User ͬһ��ѯ����е�ʱ�����
-- չʾΪ���������`floor(now - latestSampleTime)`����ʽ `X days`��
-- �û�δ֪ʱ��ʾ `N/A`��
+## 5. 配置需求（产品视角）
+### 5.1 CLI 前置条件
+用户需保证 Gemini CLI telemetry 正确开启并指向本地 Collector。
 
-### 5.4 Cost
-- ��ģ�ͺ� token ���;ۺϺ�ʹ�� `Pricing` ���㡣
-- δ֪ģ����Ĭ�ϵ��ۡ�
+### 5.2 应用配置
+- 支持轮询周期配置。
+- 支持历史回看上限配置。
+- 支持模型价格与上下文能力配置。
 
-### 5.5 Context
-- ���ڵ�ǰ�û�������Ծ session��
-- session ѡ����ԣ�
-  - �Ȳ�ѯ��ѡ session���� `session.id` �ۺ�ʱ�������
-  - Ӧ�����ȶ�ѡ��
-    1) ʱ���������ȣ�
-    2) ʱ�������ʱȡ�ֵ������ `session.id`��
-- ʹ�ø� session ���ۺ� `usage_sum`��
-- ��ģ����������ٷֱȲ���ʾ `x.xxx M (yy.y%)`��
-- �û�δ֪��ģ������ȱʧʱ��ʾ `N/A`��
+> 具体配置文件拆分、字段定义与默认值详见《Aiden 本地集成版系统设计》。
 
-## 6. ������ж��
-### 6.1 ������ͣ��������
-1. ͣ RuntimeAgent + VM + Collector + Tray��
-2. ��װ�°���
-3. ��д HKCU Run��`AidenRuntimeAgent`����
-4. ���� RuntimeAgent����ѡͬʱ���� Tray����
+## 6. 验收标准
+1. 启动后可在托盘面板看到核心指标字段。
+2. 关闭 UI 后，后台仍持续采集；再次打开 UI 可看到持续结果。
+3. 字段显示规则符合“监控数据需求（字段级）”定义（Unknown/N/A/Online/Offline 等）。
+4. 后台异常时，UI 能体现为不可用状态并在恢复后回到可用。
+5. 自动刷新与手动刷新均可触发数据更新，并更新“最后更新时间”。
+6. 升级后功能可恢复，允许短暂中断。
+7. 卸载后无后台残留自启动行为。
 
-### 6.2 ж��
-- ͣ RuntimeAgent/Tray/VM/Collector��
-- ɾ�� HKCU Run��`AidenRuntimeAgent`��
-- ɾ����װĿ¼����ж�ز�������
-- ���ָ� CLI telemetry ���á�
-
-## 7. ���ձ�׼
-1. �ر� Tray UI ��VM / Collector �Գ������в��ɲɼ���
-2. Runtime ��һ�����쳣�˳�����Զ��ָ���
-3. ������ Runtime �ɻָ����У�������ʱ�жϡ�
-4. ж�غ��� Agent ������ HKCU ������������
-5. ָ��ھ�����ʾ������ϵ� 5 �ڡ�
+## 7. 关联文档
+- 技术策略、组件架构、配置拆分、守护机制、升级卸载脚本与指标计算口径：
+  - `docs/Aiden本地集成版系统设计.md`
