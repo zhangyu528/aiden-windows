@@ -32,7 +32,7 @@
 - `Vm`：
   - `BaseUrl`、`Port`、`QueryEndpoint`、`HealthEndpoint`、`OtlpEndpoint`
   - `ServiceNameFilter`
-  - `HistoryFallbackDays`
+  - `MaxHistoryDays`
   - `PollSeconds`
 - `Collector`：
   - `BaseUrl`、`GrpcPort`、`HttpPort`、`HealthPort`
@@ -42,21 +42,23 @@
 约束：
 - `Vm.BaseUrl`、`Collector.BaseUrl` 可不带端口，端口由对应配置补齐。
 - `Vm.ServiceNameFilter` 默认 `gemini-cli`。
-- `Vm.HistoryFallbackDays` 默认 `7`。
+- `Vm.MaxHistoryDays` 默认 `365`。
 
 ## 5. 指标口径
 ### 5.1 Input / Output
 - 瞬时优先：
   - `sum(gen_ai.client.token.usage_sum{gen_ai.token.type="input",service.name="<filter>"})`
   - `sum(gen_ai.client.token.usage_sum{gen_ai.token.type="output",service.name="<filter>"})`
-- 无样本回退：`sum(last_over_time(...[<HistoryFallbackDays>d]))`
+- 无样本回退：`sum(last_over_time(...[<lookbackDays>d]))`
+  - `lookbackDays` 由最新用户活跃时间动态计算：`ceil(now - activeAt) + 1`，并限制不超过 `MaxHistoryDays`；
+  - 若无最新用户，则 `lookbackDays = MaxHistoryDays`。
 - 当 `CurrentUserEmail=Unknown` 时，Input/Output 显示 `N/A`。
 
 ### 5.2 Current User
 - 瞬时优先：
   - `topk(1, max by (user.email) (timestamp(gen_ai.client.token.usage_sum{service.name="<filter>",user.email!=""})))`
 - 回退窗口：
-  - `topk(1, max by (user.email) (timestamp(last_over_time(...[<HistoryFallbackDays>d]))))`
+  - `topk(1, max by (user.email) (timestamp(last_over_time(...[<MaxHistoryDays>d]))))`
 - 无结果显示 `Unknown`。
 
 ### 5.3 User Active
@@ -67,6 +69,11 @@
 
 ### 5.4 Context（当前活跃会话）
 1. 选当前用户最后活跃 `session.id`（瞬时优先，回退窗口）。
+   - 瞬时候选查询：
+     `max by (session.id) (timestamp(gen_ai.client.token.usage_sum{service.name="<filter>",user.email="<currentUser>",session.id!=""}))`
+   - 回退候选查询：
+     `max by (session.id) (timestamp(last_over_time(gen_ai.client.token.usage_sum{service.name="<filter>",user.email="<currentUser>",session.id!=""}[<lookbackDays>d])))`
+   - 应用内稳定选择规则：先取时间戳最大；若时间戳并列，取字典序最大的 `session.id`。
 2. 取该 session 的综合 `usage_sum`（不区分 token.type）。
 3. 取该 session 最后一次模型 `gen_ai.request.model`。
 4. 计算百分比：`usage_sum / ModelContextWindowTokens[model] * 100`。

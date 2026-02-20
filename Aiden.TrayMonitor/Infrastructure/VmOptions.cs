@@ -8,6 +8,6 @@ public sealed class VmOptions
     public string HealthEndpoint { get; set; } = "http://127.0.0.1:8428/health";
     public string OtlpEndpoint { get; set; } = "http://127.0.0.1:8428/opentelemetry";
     public string ServiceNameFilter { get; set; } = "gemini-cli";
-    public int HistoryFallbackDays { get; set; } = 7;
+    public int MaxHistoryDays { get; set; } = 365;
     public int PollSeconds { get; set; } = 5;
 }

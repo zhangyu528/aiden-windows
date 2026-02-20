@@ -11,4 +11,9 @@ public partial class TrayPanelWindow : Window
         DataContext = viewModel;
         Deactivated += (_, _) => Hide();
     }
+
+    private void OnExitClick(object sender, RoutedEventArgs e)
+    {
+        System.Windows.Application.Current.Shutdown();
+    }
 }

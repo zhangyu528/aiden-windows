@@ -41,7 +41,7 @@ Edit `Aiden.TrayMonitor/appsettings.json`:
 - `Vm.HealthEndpoint`
 - `Vm.OtlpEndpoint`
 - `Vm.ServiceNameFilter`
-- `Vm.HistoryFallbackDays`
+- `Vm.MaxHistoryDays`
 - `Vm.PollSeconds`
 - `Collector.BaseUrl`
 - `Collector.GrpcPort`
@@ -67,24 +67,28 @@ Token query filter:
 - The app queries only the configured service name via `service.name`.
 - Default is `Vm.ServiceNameFilter = "gemini-cli"`.
 - Input/Output uses instant query first; if instant has no sample, it falls back to
-  `last_over_time(...[<HistoryFallbackDays>d])`.
-- Default fallback window is `Vm.HistoryFallbackDays = 7`.
+  `last_over_time(...[<lookbackDays>d])`.
+- `lookbackDays` is dynamic:
+  - when latest user active time exists: `ceil(now - activeAt) + 1`, capped by `Vm.MaxHistoryDays`;
+  - when latest user is unknown: use `Vm.MaxHistoryDays`.
 - When current user is `Unknown`, Input/Output display as `N/A`.
 
 Latest user rule:
 - The app resolves latest user with instant query first:
   `topk(1, max by (user.email) (timestamp(gen_ai.client.token.usage_sum{service.name="<filter>",user.email!=""})))`
 - If instant has no sample, it falls back to:
-  `topk(1, max by (user.email) (timestamp(last_over_time(gen_ai.client.token.usage_sum{service.name="<filter>",user.email!=""}[<HistoryFallbackDays>d]))))`
+  `topk(1, max by (user.email) (timestamp(last_over_time(gen_ai.client.token.usage_sum{service.name="<filter>",user.email!=""}[<MaxHistoryDays>d]))))`
 - If no user email exists, it shows `Unknown`.
 - User active value is computed from the same timestamp as `floor(now - latestSampleTime)` in days.
 - If current user is `Unknown`, user active time is shown as `N/A`.
 
 Context rule:
 - Context means token usage of the current user's last active session.
-- Session selection uses instant query first:
-  `topk(1, max by (session.id) (timestamp(gen_ai.client.token.usage_sum{service.name="<filter>",user.email="<currentUser>",session.id!=""})))`
-- If instant has no sample, it falls back to a window query with `HistoryFallbackDays`.
+- Session selection uses instant query first, then stable pick in app:
+  `max by (session.id) (timestamp(gen_ai.client.token.usage_sum{service.name="<filter>",user.email="<currentUser>",session.id!=""}))`
+- If instant has no sample, it falls back to a window query with dynamic `lookbackDays`:
+  `max by (session.id) (timestamp(last_over_time(gen_ai.client.token.usage_sum{service.name="<filter>",user.email="<currentUser>",session.id!=""}[<lookbackDays>d])))`
+- Stable pick rule in app: highest timestamp first; when timestamps tie, choose lexical max `session.id`.
 - Context value uses total `usage_sum` of that session (all token types), then divides by
   model context window tokens and shows `M + %`.
 - If current user is `Unknown`, context is shown as `N/A`.

@@ -68,6 +68,11 @@
 
 ### 5.5 Context
 - 基于当前用户的最后活跃 session。
+- session 选择策略：
+  - 瞬时优先，回退 `last_over_time` 窗口。
+  - 先查询全部候选 session（按 `session.id` 聚合时间戳），再在应用内稳定选择：
+    1) 时间戳最大优先；
+    2) 时间戳并列时，取字典序最大的 `session.id`。
 - 使用该 session 的综合 `usage_sum`。
 - 按模型能力计算百分比并显示 `x.xxx M (yy.y%)`。
 - 用户未知或模型能力缺失时显示 `N/A`。
