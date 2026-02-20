@@ -27,6 +27,8 @@ public partial class App : System.Windows.Application
             {
                 services.Configure<VmOptions>(ctx.Configuration.GetSection("Vm"));
                 services.Configure<CollectorOptions>(ctx.Configuration.GetSection("Collector"));
+                services.Configure<PricingOptions>(ctx.Configuration.GetSection("Pricing"));
+                services.Configure<ModelCapabilityOptions>(ctx.Configuration.GetSection("ModelCapability"));
                 services.AddHttpClient();
 
                 services.AddSingleton<VmClient>();
