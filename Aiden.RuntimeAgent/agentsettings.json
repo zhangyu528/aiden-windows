@@ -1,0 +1,10 @@
+{
+  "Agent": {
+    "Enabled": true,
+    "AutoStartOnLogin": true,
+    "HealthCheckSeconds": 5,
+    "BackoffMinSeconds": 2,
+    "BackoffMaxSeconds": 60,
+    "StatusPort": 18731
+  }
+}

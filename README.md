@@ -5,6 +5,7 @@ Windows desktop monitoring project for Gemini CLI telemetry.
 ## Project Structure
 
 - `Aiden.TrayMonitor/`: WPF tray app MVP (Gemini -> Collector -> VM)
+- `Aiden.RuntimeAgent/`: user-level background daemon that supervises VM + Collector
 - `docs/`: FRD and system design documents
 
 ## Prerequisites
@@ -20,12 +21,25 @@ dotnet restore
 dotnet run
 ```
 
+Run runtime agent (optional manual run, normally auto-started by tray):
+
+```powershell
+cd Aiden.RuntimeAgent
+dotnet restore
+dotnet run
+```
+
+Configuration layout:
+- Shared runtime settings: `runtime.shared.json` (each project output)
+- Tray UI settings: `Aiden.TrayMonitor/appsettings.json`
+- Agent-only settings: `Aiden.RuntimeAgent/agentsettings.json`
+
 ## Current MVP Features
 
 - Tray resident app
 - Left click tray icon to toggle panel
-- Right click menu: refresh / show-hide / exit
-- Auto-start VictoriaMetrics and OTel Collector (when runtime binaries exist)
+- Right click menu: refresh / show-hide / runtime status / restart runtime / exit
+- User-level background agent auto-start (HKCU Run) to keep VM + Collector running after tray exit
 - Poll VictoriaMetrics periodically
 - Manual refresh from panel
 

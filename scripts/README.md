@@ -38,3 +38,26 @@ powershell -ExecutionPolicy Bypass -File .\scripts\download-collector.ps1 `
   -DownloadUrl "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol_0.146.1_windows_amd64.tar.gz" `
   -Sha256 "0eaa1ff9d0f5d8009921667368981617641cebb1766fc7b38be95d5dc21a126a"
 ```
+
+## upgrade-stop-install-start.ps1
+
+Stop current runtime processes, install new package, refresh HKCU auto-start key, and start RuntimeAgent + Tray.
+
+Usage:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\upgrade-stop-install-start.ps1 `
+  -NewPackagePath "C:\temp\aiden-new" `
+  -InstallPath "C:\Users\<you>\AppData\Local\Aiden"
+```
+
+## uninstall-clean-agent.ps1
+
+Stop runtime processes and clean user-level startup entry (`HKCU\...\Run\AidenRuntimeAgent`).
+
+Usage:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-clean-agent.ps1 `
+  -InstallPath "C:\Users\<you>\AppData\Local\Aiden"
+```

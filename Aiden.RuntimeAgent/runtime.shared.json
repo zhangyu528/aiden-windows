@@ -1,0 +1,24 @@
+{
+  "Vm": {
+    "BaseUrl": "http://127.0.0.1",
+    "Port": 8428,
+    "QueryEndpoint": "/api/v1/query",
+    "HealthEndpoint": "/health",
+    "OtlpEndpoint": "/opentelemetry",
+    "ServiceNameFilter": "gemini-cli"
+  },
+  "Collector": {
+    "BaseUrl": "http://127.0.0.1",
+    "GrpcPort": 4317,
+    "HttpPort": 4318,
+    "HealthPort": 13133
+  },
+  "Agent": {
+    "Enabled": true,
+    "AutoStartOnLogin": true,
+    "HealthCheckSeconds": 5,
+    "BackoffMinSeconds": 2,
+    "BackoffMaxSeconds": 60,
+    "StatusPort": 18731
+  }
+}

@@ -11,16 +11,19 @@ public sealed class TrayIconService : IDisposable
     private readonly TrayPanelWindow _panelWindow;
     private readonly WindowPositionService _windowPositionService;
     private readonly TelemetryService _telemetryService;
+    private readonly RuntimeAgentClient _runtimeAgentClient;
     private WinForms.NotifyIcon? _notifyIcon;
 
     public TrayIconService(
         TrayPanelWindow panelWindow,
         WindowPositionService windowPositionService,
-        TelemetryService telemetryService)
+        TelemetryService telemetryService,
+        RuntimeAgentClient runtimeAgentClient)
     {
         _panelWindow = panelWindow;
         _windowPositionService = windowPositionService;
         _telemetryService = telemetryService;
+        _runtimeAgentClient = runtimeAgentClient;
     }
 
     public void Initialize()
@@ -31,10 +34,12 @@ public sealed class TrayIconService : IDisposable
         }
 
         var contextMenu = new WinForms.ContextMenuStrip();
-        contextMenu.Items.Add("刷新", null, async (_, _) => await _telemetryService.RefreshOnceAsync());
-        contextMenu.Items.Add("显示/隐藏", null, (_, _) => TogglePanel());
+        contextMenu.Items.Add("Refresh", null, async (_, _) => await _telemetryService.RefreshOnceAsync());
+        contextMenu.Items.Add("Show/Hide", null, (_, _) => TogglePanel());
+        contextMenu.Items.Add("Runtime Status", null, async (_, _) => await ShowRuntimeStatusAsync());
+        contextMenu.Items.Add("Restart Runtime", null, async (_, _) => await RestartRuntimeAsync());
         contextMenu.Items.Add(new WinForms.ToolStripSeparator());
-        contextMenu.Items.Add("退出", null, (_, _) => System.Windows.Application.Current.Shutdown());
+        contextMenu.Items.Add("Exit", null, (_, _) => System.Windows.Application.Current.Shutdown());
 
         _notifyIcon = new WinForms.NotifyIcon
         {
@@ -76,5 +81,19 @@ public sealed class TrayIconService : IDisposable
         _windowPositionService.PlaceNearTaskbar(_panelWindow);
         _panelWindow.Show();
         _panelWindow.Activate();
+    }
+
+    private async Task ShowRuntimeStatusAsync()
+    {
+        var status = await _runtimeAgentClient.GetStatusTextAsync(CancellationToken.None);
+        System.Windows.MessageBox.Show(status, "Runtime Status", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private async Task RestartRuntimeAsync()
+    {
+        var ok = await _runtimeAgentClient.RestartRuntimeAsync(CancellationToken.None);
+        var message = ok ? "Runtime restart requested." : "Failed to request runtime restart.";
+        var icon = ok ? MessageBoxImage.Information : MessageBoxImage.Warning;
+        System.Windows.MessageBox.Show(message, "Runtime", MessageBoxButton.OK, icon);
     }
 }

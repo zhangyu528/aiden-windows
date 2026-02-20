@@ -21,19 +21,20 @@ public partial class App : System.Windows.Application
             .ConfigureAppConfiguration(cfg =>
             {
                 cfg.SetBasePath(AppContext.BaseDirectory);
+                cfg.AddJsonFile("runtime.shared.json", optional: true, reloadOnChange: true);
                 cfg.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
             })
             .ConfigureServices((ctx, services) =>
             {
                 services.Configure<VmOptions>(ctx.Configuration.GetSection("Vm"));
                 services.Configure<CollectorOptions>(ctx.Configuration.GetSection("Collector"));
+                services.Configure<AgentOptions>(ctx.Configuration.GetSection("Agent"));
                 services.Configure<PricingOptions>(ctx.Configuration.GetSection("Pricing"));
                 services.Configure<ModelCapabilityOptions>(ctx.Configuration.GetSection("ModelCapability"));
                 services.AddHttpClient();
 
                 services.AddSingleton<VmClient>();
-                services.AddSingleton<VmProcessService>();
-                services.AddSingleton<CollectorProcessService>();
+                services.AddSingleton<RuntimeAgentClient>();
                 services.AddSingleton<TelemetryService>();
                 services.AddSingleton<WindowPositionService>();
                 services.AddSingleton<TrayPanelViewModel>();
@@ -44,11 +45,8 @@ public partial class App : System.Windows.Application
 
         await _host.StartAsync();
 
-        var vmProcess = _host.Services.GetRequiredService<VmProcessService>();
-        await vmProcess.EnsureStartedAsync(CancellationToken.None);
-
-        var collectorProcess = _host.Services.GetRequiredService<CollectorProcessService>();
-        await collectorProcess.EnsureStartedAsync(CancellationToken.None);
+        var runtimeAgent = _host.Services.GetRequiredService<RuntimeAgentClient>();
+        await runtimeAgent.EnsureReadyAsync(CancellationToken.None);
 
         var telemetry = _host.Services.GetRequiredService<TelemetryService>();
         telemetry.Start();
@@ -63,12 +61,6 @@ public partial class App : System.Windows.Application
         {
             var telemetry = _host.Services.GetService<TelemetryService>();
             telemetry?.Stop();
-
-            var collectorProcess = _host.Services.GetService<CollectorProcessService>();
-            collectorProcess?.StopIfOwned();
-
-            var vmProcess = _host.Services.GetService<VmProcessService>();
-            vmProcess?.StopIfOwned();
 
             var tray = _host.Services.GetService<TrayIconService>();
             tray?.Dispose();

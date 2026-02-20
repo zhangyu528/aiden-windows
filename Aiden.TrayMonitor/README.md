@@ -34,19 +34,27 @@ The app will generate collector config at runtime:
 - `Aiden.TrayMonitor/runtime/collector/<version>/config/otelcol-vm.yaml`
 
 ## Config
-Edit `Aiden.TrayMonitor/appsettings.json`:
+Shared runtime settings are loaded from `runtime.shared.json`:
 - `Vm.BaseUrl`
 - `Vm.Port`
 - `Vm.QueryEndpoint`
 - `Vm.HealthEndpoint`
 - `Vm.OtlpEndpoint`
 - `Vm.ServiceNameFilter`
-- `Vm.MaxHistoryDays`
-- `Vm.PollSeconds`
 - `Collector.BaseUrl`
 - `Collector.GrpcPort`
 - `Collector.HttpPort`
 - `Collector.HealthPort`
+- `Agent.Enabled`
+- `Agent.AutoStartOnLogin`
+- `Agent.HealthCheckSeconds`
+- `Agent.BackoffMinSeconds`
+- `Agent.BackoffMaxSeconds`
+- `Agent.StatusPort`
+
+Tray-specific settings are loaded from `Aiden.TrayMonitor/appsettings.json`:
+- `Vm.MaxHistoryDays`
+- `Vm.PollSeconds`
 - `Pricing.DefaultInputPerMillionUsd`
 - `Pricing.DefaultOutputPerMillionUsd`
 - `Pricing.ModelRates.<model>.InputPerMillionUsd`
@@ -57,6 +65,11 @@ Edit `Aiden.TrayMonitor/appsettings.json`:
 If relative, the app resolves them with `Vm.BaseUrl`.
 `Vm.BaseUrl` can omit port. When omitted, the app uses `Vm.Port`.
 `Collector.BaseUrl` can omit port. When omitted, the app uses each collector port item (`GrpcPort` / `HttpPort` / `HealthPort`).
+
+Runtime agent behavior:
+- Tray app ensures `Aiden.RuntimeAgent` is running at startup.
+- If `Agent.AutoStartOnLogin = true`, tray writes HKCU auto-start key (`AidenRuntimeAgent`).
+- Exiting tray UI does not stop runtime agent.
 
 Default telemetry target expected by this app:
 - `telemetry.useCollector = true`

@@ -1,22 +1,25 @@
-ï»¿# Aiden æœ¬åœ°æ‰˜ç›˜ç›‘æ§ FRDï¼ˆå½“å‰ç‰ˆæœ¬ï¼‰
+# Aiden ±¾µØÍĞÅÌ¼à¿Ø FRD£¨µ±Ç°°æ±¾£©
 
-## 1. ç›®æ ‡
-åœ¨ Windows ä¸‹æä¾› Gemini CLI telemetry çš„æ‰˜ç›˜å¯è§†åŒ–ï¼Œä½æ‰“æ‰°å±•ç¤ºæ ¸å¿ƒæ¶ˆè€—æ•°æ®ã€‚
+## 1. Ä¿±ê
+ÔÚ Windows ÏÂÌá¹© Gemini CLI telemetry µÄÍĞÅÌ¿ÉÊÓ»¯£¬µÍ´òÈÅÕ¹Ê¾ºËĞÄÏûºÄÊı¾İ£¬²¢Ö§³Ö¹Ø±Õ UI ºó¼ÌĞøºóÌ¨²É¼¯¡£
 
-## 2. èŒƒå›´
+## 2. ·¶Î§
 ### 2.1 In Scope
-- æ‰˜ç›˜é¢æ¿å±•ç¤ºï¼šInputã€Outputã€Userã€User Activeã€Costã€Contextã€Statusã€‚
-- é“¾è·¯ï¼šGemini CLI -> OTel Collector -> VictoriaMetricsã€‚
-- åº”ç”¨å¯åŠ¨æ—¶è‡ªåŠ¨æ‹‰èµ· VM/Collectorï¼ˆæœªè¿è¡Œæ—¶ï¼‰ã€‚
-- è‡ªåŠ¨åˆ·æ–°ä¸æ‰‹åŠ¨åˆ·æ–°ã€‚
+- ÍĞÅÌÃæ°åÕ¹Ê¾£ºInput¡¢Output¡¢User¡¢User Active¡¢Cost¡¢Context¡¢Status¡£
+- Á´Â·£ºGemini CLI -> OTel Collector -> VictoriaMetrics¡£
+- ÓÃ»§¼¶ºóÌ¨ÊØ»¤½ø³Ì£¨RuntimeAgent£©ÍĞ¹Ü VM / Collector¡£
+- ×Ô¶¯Ë¢ĞÂÓëÊÖ¶¯Ë¢ĞÂ¡£
+- Í£»úÉı¼¶£¨ÏÈÍ£ºó×°£©ÓëĞ¶ÔØÇåÀí£¨º¬ Agent Óë HKCU Run£©¡£
 
 ### 2.2 Out of Scope
-- ç»ˆç«¯æ—¥å¿—å±•ç¤ºã€‚
-- è¶‹åŠ¿ä¸æ€§èƒ½åˆ†æã€‚
-- Web é¡µé¢ã€‚
+- Windows ·şÎñ£¨¹ÜÀíÔ±È¨ÏŞ£©ÍĞ¹Ü¡£
+- ÎŞ·ìÈÈÉı¼¶¡£
+- ÖÕ¶ËÈÕÖ¾Õ¹Ê¾¡£
+- Ç÷ÊÆÓëĞÔÄÜ·ÖÎö¡£
+- Web Ò³Ãæ¡£
 
-## 3. é…ç½®éœ€æ±‚
-### 3.1 Gemini CLIï¼ˆ`~/.gemini/settings.json`ï¼‰
+## 3. ÅäÖÃĞèÇó
+### 3.1 Gemini CLI£¨`~/.gemini/settings.json`£©
 - `telemetry.enabled = true`
 - `telemetry.target = "local"`
 - `telemetry.useCollector = true`
@@ -24,62 +27,85 @@
 - `telemetry.otlpEndpoint = "http://127.0.0.1:4317"`
 - `telemetry.logPrompts = false`
 
-### 3.2 åº”ç”¨ï¼ˆ`Aiden.TrayMonitor/appsettings.json`ï¼‰
-- `Vm.*`ï¼šæŸ¥è¯¢å’Œå¥åº·æ£€æŸ¥é…ç½®ã€æœåŠ¡è¿‡æ»¤ã€å›é€€çª—å£ã€è½®è¯¢å‘¨æœŸã€‚
-- `Collector.*`ï¼šCollector åœ°å€ä¸ç«¯å£ã€‚
-- `Pricing.*`ï¼šæˆæœ¬å•ä»·ã€‚
-- `ModelCapability.*`ï¼šæ¨¡å‹ä¸Šä¸‹æ–‡èƒ½åŠ›ã€‚
+### 3.2 Ó¦ÓÃÅäÖÃ²ğ·Ö
+- `runtime.shared.json`£¨¹²Ïí£©£º
+  - `Vm.*`£¨BaseUrl/Port/QueryEndpoint/HealthEndpoint/OtlpEndpoint/ServiceNameFilter£©
+  - `Collector.*`£¨BaseUrl/GrpcPort/HttpPort/HealthPort£©
+  - `Agent.*`£¨Enabled/AutoStartOnLogin/HealthCheckSeconds/BackoffMinSeconds/BackoffMaxSeconds/StatusPort£©
+- `Aiden.TrayMonitor/appsettings.json`£¨Tray ×¨Êô£©£º
+  - `Vm.MaxHistoryDays`
+  - `Vm.PollSeconds`
+  - `Pricing.*`
+  - `ModelCapability.*`
+- `Aiden.RuntimeAgent/agentsettings.json`£¨Agent ×¨Êô¸²¸ÇÏî£©
 
-## 4. åŠŸèƒ½éœ€æ±‚
-### 4.1 å±•ç¤ºå­—æ®µ
+## 4. ¹¦ÄÜĞèÇó
+### 4.1 Õ¹Ê¾×Ö¶Î
 - Input Tokens
 - Output Tokens
 - Current User Email
 - User Active
 - Cost USD
-- Contextï¼ˆM + %ï¼‰
+- Context£¨M + %£©
 - Status
 
-### 4.2 åˆ·æ–°è¡Œä¸º
-- è‡ªåŠ¨è½®è¯¢ï¼šæŒ‰ `Vm.PollSeconds`ã€‚
-- æ‰‹åŠ¨åˆ·æ–°ï¼šç‚¹å‡» Refresh æŒ‰é’®ã€‚
+### 4.2 Ë¢ĞÂĞĞÎª
+- ×Ô¶¯ÂÖÑ¯£º°´ `Vm.PollSeconds`¡£
+- ÊÖ¶¯Ë¢ĞÂ£ºµã»÷ Refresh °´Å¥¡£
 
-### 4.3 è¿è¡Œæ—¶è¡Œä¸º
-- å¯åŠ¨æ—¶æ£€æŸ¥å¹¶æ‹‰èµ· VM / Collectorã€‚
-- ä¾èµ–ä¸å¯ç”¨æ—¶é™çº§ä¸º Offlineã€‚
+### 4.3 ÔËĞĞÊ±ĞĞÎª
+- Tray Æô¶¯Ê±È·±£ RuntimeAgent ÔËĞĞ²¢Ğ´Èë HKCU Run£¨¿ÉÅäÖÃ£©¡£
+- RuntimeAgent ÊØ»¤ VM / Collector¡£
+- Tray Exit ½ö¹Ø±Õ UI£¬²»Í£Ö¹ RuntimeAgent¡£
+- Runtime ²»½¡¿µÊ±×Ô¶¯ÖØÆô£¨Ö¸ÊıÍË±Ü£©¡£
 
-## 5. æŒ‡æ ‡å£å¾„
+## 5. Ö¸±ê¿Ú¾¶
 ### 5.1 Input / Output
-- æŸ¥è¯¢ç­–ç•¥ï¼šç¬æ—¶ä¼˜å…ˆï¼Œç©ºå€¼å›é€€ `last_over_time` çª—å£ã€‚
-- ç”¨æˆ·æœªçŸ¥ï¼ˆ`CurrentUserEmail=Unknown`ï¼‰æ—¶æ˜¾ç¤º `N/A`ã€‚
+- ²éÑ¯²ßÂÔ£ºË²Ê±ÓÅÏÈ£¬¿ÕÖµ»ØÍË `last_over_time`¡£
+- `lookbackDays = min(ceil(now - activeAt) + 1, MaxHistoryDays)`£»
+  ÈôÎŞ×îĞÂÓÃ»§£¬`lookbackDays = MaxHistoryDays`¡£
+- ÓÃ»§Î´Öª£¨`CurrentUserEmail=Unknown`£©Ê±ÏÔÊ¾ `N/A`¡£
 
 ### 5.2 Current User
-- å–æœ€è¿‘ä¸€æ¬¡ä¸ŠæŠ¥ç”¨æˆ·ï¼ˆç¬æ—¶ä¼˜å…ˆï¼Œç©ºå€¼å›é€€çª—å£ï¼‰ã€‚
-- æ— æ•°æ®æ˜¾ç¤º `Unknown`ã€‚
+- È¡×î½üÒ»´ÎÉÏ±¨ÓÃ»§£¨Ë²Ê±ÓÅÏÈ£¬»ØÍË `MaxHistoryDays` ´°¿Ú£©¡£
+- ÎŞÊı¾İÏÔÊ¾ `Unknown`¡£
 
 ### 5.3 User Active
-- ä½¿ç”¨ Current User åŒä¸€æŸ¥è¯¢ç»“æœä¸­çš„æ—¶é—´æˆ³ã€‚
-- å±•ç¤ºä¸ºè·ä»Šå¤©æ•°ï¼š`floor(now - latestSampleTime)`ï¼Œæ ¼å¼ `X days`ã€‚
-- ç”¨æˆ·æœªçŸ¥æ—¶æ˜¾ç¤º `N/A`ã€‚
+- Ê¹ÓÃ Current User Í¬Ò»²éÑ¯½á¹ûÖĞµÄÊ±¼ä´Á¡£
+- Õ¹Ê¾Îª¾à½ñÌìÊı£º`floor(now - latestSampleTime)`£¬¸ñÊ½ `X days`¡£
+- ÓÃ»§Î´ÖªÊ±ÏÔÊ¾ `N/A`¡£
 
 ### 5.4 Cost
-- æŒ‰æ¨¡å‹å’Œ token ç±»å‹èšåˆåï¼Œä½¿ç”¨ `Pricing` è®¡ç®—ã€‚
-- æœªçŸ¥æ¨¡å‹èµ°é»˜è®¤å•ä»·ã€‚
+- °´Ä£ĞÍºÍ token ÀàĞÍ¾ÛºÏºó£¬Ê¹ÓÃ `Pricing` ¼ÆËã¡£
+- Î´ÖªÄ£ĞÍ×ßÄ¬ÈÏµ¥¼Û¡£
 
 ### 5.5 Context
-- åŸºäºå½“å‰ç”¨æˆ·çš„æœ€åæ´»è·ƒ sessionã€‚
-- session é€‰æ‹©ç­–ç•¥ï¼š
-  - ç¬æ—¶ä¼˜å…ˆï¼Œå›é€€ `last_over_time` çª—å£ã€‚
-  - å…ˆæŸ¥è¯¢å…¨éƒ¨å€™é€‰ sessionï¼ˆæŒ‰ `session.id` èšåˆæ—¶é—´æˆ³ï¼‰ï¼Œå†åœ¨åº”ç”¨å†…ç¨³å®šé€‰æ‹©ï¼š
-    1) æ—¶é—´æˆ³æœ€å¤§ä¼˜å…ˆï¼›
-    2) æ—¶é—´æˆ³å¹¶åˆ—æ—¶ï¼Œå–å­—å…¸åºæœ€å¤§çš„ `session.id`ã€‚
-- ä½¿ç”¨è¯¥ session çš„ç»¼åˆ `usage_sum`ã€‚
-- æŒ‰æ¨¡å‹èƒ½åŠ›è®¡ç®—ç™¾åˆ†æ¯”å¹¶æ˜¾ç¤º `x.xxx M (yy.y%)`ã€‚
-- ç”¨æˆ·æœªçŸ¥æˆ–æ¨¡å‹èƒ½åŠ›ç¼ºå¤±æ—¶æ˜¾ç¤º `N/A`ã€‚
+- »ùÓÚµ±Ç°ÓÃ»§µÄ×îºó»îÔ¾ session¡£
+- session Ñ¡Ôñ²ßÂÔ£º
+  - ÏÈ²éÑ¯ºòÑ¡ session£¨°´ `session.id` ¾ÛºÏÊ±¼ä´Á£©¡£
+  - Ó¦ÓÃÄÚÎÈ¶¨Ñ¡Ôñ£º
+    1) Ê±¼ä´Á×î´óÓÅÏÈ£»
+    2) Ê±¼ä´Á²¢ÁĞÊ±È¡×ÖµäĞò×î´ó `session.id`¡£
+- Ê¹ÓÃ¸Ã session µÄ×ÛºÏ `usage_sum`¡£
+- °´Ä£ĞÍÄÜÁ¦¼ÆËã°Ù·Ö±È²¢ÏÔÊ¾ `x.xxx M (yy.y%)`¡£
+- ÓÃ»§Î´Öª»òÄ£ĞÍÄÜÁ¦È±Ê§Ê±ÏÔÊ¾ `N/A`¡£
 
-## 6. éªŒæ”¶æ ‡å‡†
-1. å¯åŠ¨åº”ç”¨åï¼ŒVM/Collector æœªè¿è¡Œæ—¶å¯è‡ªåŠ¨æ‹‰èµ·ã€‚
-2. è§¦å‘ Gemini CLI è¯·æ±‚åï¼Œé¢æ¿å­—æ®µå¯æ›´æ–°ã€‚
-3. åœæ­¢ä¸ŠæŠ¥åï¼Œå›é€€çª—å£å†…ä»å¯æ˜¾ç¤ºå†å²å€¼ã€‚
-4. ç”¨æˆ·æœªçŸ¥æ—¶ï¼ŒInput/Output/User Active/Context æ˜¾ç¤º `N/A` æˆ– `Unknown`ï¼ˆæŒ‰å­—æ®µå®šä¹‰ï¼‰ã€‚
-5. æ¨¡å‹èƒ½åŠ›ç¼ºå¤±æ—¶ï¼ŒContext æ˜¾ç¤º `N/A`ã€‚
+## 6. Éı¼¶ÓëĞ¶ÔØ
+### 6.1 Éı¼¶£¨Í£»úÉı¼¶£©
+1. Í£ RuntimeAgent + VM + Collector + Tray¡£
+2. °²×°ĞÂ°ü¡£
+3. ÖØĞ´ HKCU Run£¨`AidenRuntimeAgent`£©¡£
+4. Æô¶¯ RuntimeAgent£¨¿ÉÑ¡Í¬Ê±Æô¶¯ Tray£©¡£
+
+### 6.2 Ğ¶ÔØ
+- Í£ RuntimeAgent/Tray/VM/Collector¡£
+- É¾³ı HKCU Run£º`AidenRuntimeAgent`¡£
+- É¾³ı°²×°Ä¿Â¼£¨°´Ğ¶ÔØ²ÎÊı£©¡£
+- ²»»Ö¸´ CLI telemetry ÅäÖÃ¡£
+
+## 7. ÑéÊÕ±ê×¼
+1. ¹Ø±Õ Tray UI ºó£¬VM / Collector ÈÔ³ÖĞøÔËĞĞ²¢¿É²É¼¯¡£
+2. Runtime ÈÎÒ»½ø³ÌÒì³£ÍË³öºó¿É×Ô¶¯»Ö¸´¡£
+3. Éı¼¶ºó Runtime ¿É»Ö¸´ÔËĞĞ£¬ÔÊĞí¶ÌÊ±ÖĞ¶Ï¡£
+4. Ğ¶ÔØºóÎŞ Agent ½ø³ÌÓë HKCU ×ÔÆô¶¯²ĞÁô¡£
+5. Ö¸±ê¿Ú¾¶ÓëÏÔÊ¾¹æÔò·ûºÏµÚ 5 ½Ú¡£

@@ -1,91 +1,115 @@
-ï»¿# Aiden æœ¬åœ°é›†æˆç‰ˆç³»ç»Ÿè®¾è®¡ï¼ˆå½“å‰å®ç°ï¼‰
+# Aiden ±¾µØ¼¯³É°æÏµÍ³Éè¼Æ£¨µ±Ç°ÊµÏÖ£©
 
-## 1. ç›®æ ‡ä¸èŒƒå›´
-é¢å‘ Windows æ‰˜ç›˜ç›‘æ§åœºæ™¯ï¼Œå±•ç¤º Gemini CLI çš„ telemetry æŒ‡æ ‡ã€‚
+## 1. Ä¿±êÓë·¶Î§
+ÃæÏò Windows ÍĞÅÌ¼à¿Ø³¡¾°£¬Õ¹Ê¾ Gemini CLI µÄ telemetry Ö¸±ê£¬²¢ÔÚ¹Ø±Õ UI ºó±£³ÖºóÌ¨²É¼¯¡£
 
-æœ¬æœŸç›®æ ‡ï¼š
-- æ‰˜ç›˜å¸¸é©»æ˜¾ç¤ºæ ¸å¿ƒæ•°æ®ã€‚
-- è‡ªåŠ¨æ‹‰èµ· VictoriaMetrics ä¸ OTel Collectorï¼ˆæœªè¿è¡Œæ—¶ï¼‰ã€‚
-- åŸºäº VictoriaMetrics æŸ¥è¯¢æ¥å£å‘¨æœŸåˆ·æ–° UIã€‚
+±¾ÆÚÄ¿±ê£º
+- ÍĞÅÌ³£×¤ÏÔÊ¾ºËĞÄÊı¾İ¡£
+- ÓÃ»§¼¶ RuntimeAgent ÊØ»¤ VictoriaMetrics Óë OTel Collector£¨ÎŞĞè¹ÜÀíÔ±È¨ÏŞ£©¡£
+- Tray ÍË³ö½ö¹Ø±Õ UI£¬²»ÖĞ¶Ï Runtime ²É¼¯Á´Â·¡£
+- »ùÓÚ VictoriaMetrics ²éÑ¯½Ó¿ÚÖÜÆÚË¢ĞÂ UI¡£
 
-æœ¬æœŸä¸åŒ…å«ï¼š
-- ç»ˆç«¯æ—¥å¿—å±•ç¤ºã€‚
-- è¶‹åŠ¿ä¸æ€§èƒ½åˆ†æé¡µé¢ã€‚
-- Web ç•Œé¢ã€‚
+±¾ÆÚ²»°üº¬£º
+- Windows ·şÎñÍĞ¹Ü¡£
+- ÎŞ·ìÈÈÉı¼¶¡£
+- ÖÕ¶ËÈÕÖ¾Õ¹Ê¾¡£
+- Ç÷ÊÆÓëĞÔÄÜ·ÖÎöÒ³Ãæ¡£
+- Web ½çÃæ¡£
 
-## 2. é“¾è·¯
-`Gemini CLI -> OTel Collector -> VictoriaMetrics -> WPF Tray`
+## 2. Á´Â·
+`Gemini CLI -> OTel Collector -> VictoriaMetrics -> RuntimeAgent -> WPF Tray`
 
-- ä¸ŠæŠ¥é“¾è·¯ï¼šGemini CLI é€šè¿‡ OTLP gRPC/protobuf å‘åˆ° Collectorï¼ŒCollector å†è½¬å‘åˆ° VMã€‚
-- æŸ¥è¯¢é“¾è·¯ï¼šTray App é€šè¿‡ VM çš„ `/api/v1/query` æŸ¥è¯¢å±•ç¤ºã€‚
+- ÉÏ±¨Á´Â·£ºGemini CLI Í¨¹ı OTLP gRPC/protobuf ·¢µ½ Collector£¬Collector ÔÙ×ª·¢µ½ VM¡£
+- ÊØ»¤Á´Â·£ºRuntimeAgent ÖÜÆÚ½¡¿µ¼ì²é²¢×Ô¶¯À­Æğ VM / Collector¡£
+- ²éÑ¯Á´Â·£ºTray App Í¨¹ı VM µÄ `/api/v1/query` ²éÑ¯Õ¹Ê¾¡£
 
-## 3. ç»„ä»¶
-- `TrayPanelWindow`ï¼šå±•ç¤º Input/Output/User/User Active/Cost/Context/Statusã€‚
-- `TelemetryService`ï¼šæŒ‰ `Vm.PollSeconds` è½®è¯¢ï¼Œæ”¯æŒæ‰‹åŠ¨åˆ·æ–°ã€‚
-- `VmProcessService`ï¼šå¯åŠ¨å¹¶æ‰˜ç®¡ `runtime/vm/<version>/victoria-metrics.exe`ã€‚
-- `CollectorProcessService`ï¼šå¯åŠ¨å¹¶æ‰˜ç®¡ `runtime/collector/<version>/otelcol*.exe`ï¼Œè¿è¡Œæ—¶ç”Ÿæˆ collector é…ç½®ã€‚
-- `VmClient`ï¼šå°è£… MetricsQL æŸ¥è¯¢ä¸ä¸šåŠ¡å£å¾„ã€‚
+## 3. ×é¼ş
+- `Aiden.RuntimeAgent`£ºÓÃ»§¼¶ºóÌ¨ÊØ»¤½ø³Ì¡£
+  - `RuntimeSupervisor`£º½¡¿µ¼ì²é¡¢Ö¸ÊıÍË±ÜÖØÆô¡¢¿ØÖÆ¶Ëµã£¨`/healthz`¡¢`/status`¡¢`/restart`£©¡£
+  - `VmProcessService` / `CollectorProcessService`£ºVM/Collector À­ÆğÓë½¡¿µÌ½²â¡£
+- `TrayPanelWindow`£ºÕ¹Ê¾ Input/Output/User/User Active/Cost/Context/Status¡£
+- `TelemetryService`£º°´ `Vm.PollSeconds` ÂÖÑ¯£¬Ö§³ÖÊÖ¶¯Ë¢ĞÂ¡£
+- `VmClient`£º·â×° MetricsQL ²éÑ¯ÓëÒµÎñ¿Ú¾¶¡£
+- `RuntimeAgentClient`£ºTray ²à Agent Ì½»î¡¢×´Ì¬²éÑ¯ÓëÖØÆôÇëÇó¡£
 
-## 4. é…ç½®
-é…ç½®æ–‡ä»¶ï¼š`Aiden.TrayMonitor/appsettings.json`
+## 4. ÅäÖÃ
 
-- `Vm`ï¼š
-  - `BaseUrl`ã€`Port`ã€`QueryEndpoint`ã€`HealthEndpoint`ã€`OtlpEndpoint`
-  - `ServiceNameFilter`
-  - `MaxHistoryDays`
-  - `PollSeconds`
-- `Collector`ï¼š
-  - `BaseUrl`ã€`GrpcPort`ã€`HttpPort`ã€`HealthPort`
-- `Pricing`ï¼šé»˜è®¤å•ä»·ä¸æ¨¡å‹å•ä»·
-- `ModelCapability`ï¼šæ¨¡å‹ä¸Šä¸‹æ–‡çª—å£ token èƒ½åŠ›
+### 4.1 ÅäÖÃÎÄ¼ş²ğ·Ö
+- ¹²ÏíÅäÖÃ£º`runtime.shared.json`
+  - `Vm.BaseUrl`¡¢`Vm.Port`¡¢`Vm.QueryEndpoint`¡¢`Vm.HealthEndpoint`¡¢`Vm.OtlpEndpoint`¡¢`Vm.ServiceNameFilter`
+  - `Collector.BaseUrl`¡¢`Collector.GrpcPort`¡¢`Collector.HttpPort`¡¢`Collector.HealthPort`
+  - `Agent.Enabled`¡¢`Agent.AutoStartOnLogin`¡¢`Agent.HealthCheckSeconds`¡¢`Agent.BackoffMinSeconds`¡¢`Agent.BackoffMaxSeconds`¡¢`Agent.StatusPort`
+- Tray ×¨Êô£º`Aiden.TrayMonitor/appsettings.json`
+  - `Vm.MaxHistoryDays`¡¢`Vm.PollSeconds`
+  - `Pricing.*`
+  - `ModelCapability.*`
+- Agent ×¨Êô£º`Aiden.RuntimeAgent/agentsettings.json`
+  - Agent ¾Ö²¿¸²¸ÇÏî£¨°´Ğè£©
 
-çº¦æŸï¼š
-- `Vm.BaseUrl`ã€`Collector.BaseUrl` å¯ä¸å¸¦ç«¯å£ï¼Œç«¯å£ç”±å¯¹åº”é…ç½®è¡¥é½ã€‚
-- `Vm.ServiceNameFilter` é»˜è®¤ `gemini-cli`ã€‚
-- `Vm.MaxHistoryDays` é»˜è®¤ `365`ã€‚
+### 4.2 Ô¼Êø
+- `Vm.BaseUrl`¡¢`Collector.BaseUrl` ¿É²»´ø¶Ë¿Ú£¬¶Ë¿ÚÓÉ¶ÔÓ¦ÅäÖÃ²¹Æë¡£
+- `Vm.ServiceNameFilter` Ä¬ÈÏ `gemini-cli`¡£
+- `Vm.MaxHistoryDays` Ä¬ÈÏ `365`¡£
+- `Agent.AutoStartOnLogin=true` Ê±£¬Tray Æô¶¯»áÈ·±£ HKCU Run£º`AidenRuntimeAgent`¡£
 
-## 5. æŒ‡æ ‡å£å¾„
+## 5. Ö¸±ê¿Ú¾¶
 ### 5.1 Input / Output
-- ç¬æ—¶ä¼˜å…ˆï¼š
+- Ë²Ê±ÓÅÏÈ£º
   - `sum(gen_ai.client.token.usage_sum{gen_ai.token.type="input",service.name="<filter>"})`
   - `sum(gen_ai.client.token.usage_sum{gen_ai.token.type="output",service.name="<filter>"})`
-- æ— æ ·æœ¬å›é€€ï¼š`sum(last_over_time(...[<lookbackDays>d]))`
-  - `lookbackDays` ç”±æœ€æ–°ç”¨æˆ·æ´»è·ƒæ—¶é—´åŠ¨æ€è®¡ç®—ï¼š`ceil(now - activeAt) + 1`ï¼Œå¹¶é™åˆ¶ä¸è¶…è¿‡ `MaxHistoryDays`ï¼›
-  - è‹¥æ— æœ€æ–°ç”¨æˆ·ï¼Œåˆ™ `lookbackDays = MaxHistoryDays`ã€‚
-- å½“ `CurrentUserEmail=Unknown` æ—¶ï¼ŒInput/Output æ˜¾ç¤º `N/A`ã€‚
+- ÎŞÑù±¾»ØÍË£º`sum(last_over_time(...[<lookbackDays>d]))`
+- `lookbackDays`£º`min(ceil(now - activeAt) + 1, MaxHistoryDays)`£»ÈôÎŞ×îĞÂÓÃ»§Ôò `MaxHistoryDays`¡£
+- µ± `CurrentUserEmail=Unknown` Ê±£¬Input/Output ÏÔÊ¾ `N/A`¡£
 
 ### 5.2 Current User
-- ç¬æ—¶ä¼˜å…ˆï¼š
+- Ë²Ê±ÓÅÏÈ£º
   - `topk(1, max by (user.email) (timestamp(gen_ai.client.token.usage_sum{service.name="<filter>",user.email!=""})))`
-- å›é€€çª—å£ï¼š
+- »ØÍË´°¿Ú£º
   - `topk(1, max by (user.email) (timestamp(last_over_time(...[<MaxHistoryDays>d]))))`
-- æ— ç»“æœæ˜¾ç¤º `Unknown`ã€‚
+- ÎŞ½á¹ûÏÔÊ¾ `Unknown`¡£
 
 ### 5.3 User Active
-- ä»â€œå½“å‰ç”¨æˆ·â€æŸ¥è¯¢ç»“æœçš„ `value[0]`ï¼ˆUnix æ—¶é—´æˆ³ï¼‰è§£æã€‚
-- è®¡ç®—å£å¾„ï¼š`floor(now - latestSampleTime)`ï¼ˆå•ä½ï¼šå¤©ï¼‰ã€‚
-- æ˜¾ç¤ºæ ¼å¼ï¼š`X days`ã€‚
-- å½“å‰ç”¨æˆ·ä¸º `Unknown` æ—¶æ˜¾ç¤º `N/A`ã€‚
+- ´Ó¡°µ±Ç°ÓÃ»§¡±²éÑ¯½á¹ûµÄ `value[0]`£¨Unix Ê±¼ä´Á£©½âÎö¡£
+- ¼ÆËã¿Ú¾¶£º`floor(now - latestSampleTime)`£¨µ¥Î»£ºÌì£©¡£
+- ÏÔÊ¾¸ñÊ½£º`X days`¡£
+- µ±Ç°ÓÃ»§Îª `Unknown` Ê±ÏÔÊ¾ `N/A`¡£
 
-### 5.4 Contextï¼ˆå½“å‰æ´»è·ƒä¼šè¯ï¼‰
-1. é€‰å½“å‰ç”¨æˆ·æœ€åæ´»è·ƒ `session.id`ï¼ˆç¬æ—¶ä¼˜å…ˆï¼Œå›é€€çª—å£ï¼‰ã€‚
-   - ç¬æ—¶å€™é€‰æŸ¥è¯¢ï¼š
+### 5.4 Context£¨µ±Ç°»îÔ¾»á»°£©
+1. Ñ¡µ±Ç°ÓÃ»§×îºó»îÔ¾ `session.id`£¨Ë²Ê±ÓÅÏÈ£¬»ØÍË´°¿Ú£©¡£
+   - Ë²Ê±ºòÑ¡²éÑ¯£º
      `max by (session.id) (timestamp(gen_ai.client.token.usage_sum{service.name="<filter>",user.email="<currentUser>",session.id!=""}))`
-   - å›é€€å€™é€‰æŸ¥è¯¢ï¼š
+   - »ØÍËºòÑ¡²éÑ¯£º
      `max by (session.id) (timestamp(last_over_time(gen_ai.client.token.usage_sum{service.name="<filter>",user.email="<currentUser>",session.id!=""}[<lookbackDays>d])))`
-   - åº”ç”¨å†…ç¨³å®šé€‰æ‹©è§„åˆ™ï¼šå…ˆå–æ—¶é—´æˆ³æœ€å¤§ï¼›è‹¥æ—¶é—´æˆ³å¹¶åˆ—ï¼Œå–å­—å…¸åºæœ€å¤§çš„ `session.id`ã€‚
-2. å–è¯¥ session çš„ç»¼åˆ `usage_sum`ï¼ˆä¸åŒºåˆ† token.typeï¼‰ã€‚
-3. å–è¯¥ session æœ€åä¸€æ¬¡æ¨¡å‹ `gen_ai.request.model`ã€‚
-4. è®¡ç®—ç™¾åˆ†æ¯”ï¼š`usage_sum / ModelContextWindowTokens[model] * 100`ã€‚
-5. æ˜¾ç¤ºï¼š`x.xxx M (yy.y%)`ã€‚
+   - Ó¦ÓÃÄÚÎÈ¶¨Ñ¡Ôñ¹æÔò£ºÏÈÈ¡Ê±¼ä´Á×î´ó£»ÈôÊ±¼ä´Á²¢ÁĞ£¬È¡×ÖµäĞò×î´óµÄ `session.id`¡£
+2. È¡¸Ã session µÄ×ÛºÏ `usage_sum`£¨²»Çø·Ö token.type£©¡£
+3. È¡¸Ã session ×îºóÒ»´ÎÄ£ĞÍ `gen_ai.request.model`¡£
+4. ¼ÆËã°Ù·Ö±È£º`usage_sum / ModelContextWindowTokens[model] * 100`¡£
+5. ÏÔÊ¾£º`x.xxx M (yy.y%)`¡£
 
-æ˜¾ç¤ºè§„åˆ™ï¼š
-- ç”¨æˆ·æœªçŸ¥æˆ–æ¨¡å‹èƒ½åŠ›ç¼ºå¤±æ—¶ï¼ŒContext æ˜¾ç¤º `N/A`ã€‚
+ÏÔÊ¾¹æÔò£º
+- ÓÃ»§Î´Öª»òÄ£ĞÍÄÜÁ¦È±Ê§Ê±£¬Context ÏÔÊ¾ `N/A`¡£
 
 ### 5.5 Cost
-- æŒ‰æ¨¡å‹å’Œ token.type èšåˆ `usage_sum` åï¼Œå¥—ç”¨ `Pricing` å•ä»·è®¡ç®—ã€‚
-- æœªçŸ¥æ¨¡å‹ä½¿ç”¨é»˜è®¤å•ä»·ã€‚
+- °´Ä£ĞÍºÍ token.type ¾ÛºÏ `usage_sum` ºó£¬Ì×ÓÃ `Pricing` µ¥¼Û¼ÆËã¡£
+- Î´ÖªÄ£ĞÍÊ¹ÓÃÄ¬ÈÏµ¥¼Û¡£
 
-## 6. çŠ¶æ€
-- `Online`ï¼šVM å¥åº·æ£€æŸ¥å¯è®¿é—®ä¸”å…³é”®æŸ¥è¯¢æˆåŠŸã€‚
-- `Offline`ï¼šå¥åº·æ£€æŸ¥æˆ–å…³é”®æŸ¥è¯¢å¤±è´¥ã€‚
+## 6. ÔËĞĞÊ±Á÷³Ì
+1. Tray Æô¶¯£º¼ÓÔØÅäÖÃ -> `RuntimeAgentClient.EnsureReadyAsync()`¡£
+2. Agent Ì½»îÊ§°Ü£ºTray À­Æğ Agent£¬²¢µÈ´ı½¡¿µ¡£
+3. Tray ¿ªÊ¼ÂÖÑ¯ÏÔÊ¾¡£
+4. ÓÃ»§µã»÷ Exit£º½ö¹Ø±Õ Tray£¬Agent ³ÖĞøÔËĞĞ¡£
+
+## 7. Éı¼¶ÓëĞ¶ÔØ
+### 7.1 Éı¼¶£¨Í£»úÉı¼¶£©
+- Ê¹ÓÃ½Å±¾£º`scripts/upgrade-stop-install-start.ps1`
+- Á÷³Ì£ºÍ£½ø³Ì -> ¸²¸Ç°²×° -> ¸üĞÂ HKCU Run -> Æô¶¯ Agent£¨¿ÉÑ¡ Tray£©¡£
+
+### 7.2 Ğ¶ÔØÇåÀí
+- Ê¹ÓÃ½Å±¾£º`scripts/uninstall-clean-agent.ps1`
+- Á÷³Ì£ºÍ£½ø³Ì -> É¾³ı HKCU Run -> É¾³ı°²×°Ä¿Â¼£¨°´²ÎÊı£©¡£
+- ²»»Ö¸´ CLI telemetry ÅäÖÃ¡£
+
+## 8. ×´Ì¬
+- `Online`£ºVM ½¡¿µ¼ì²é¿É·ÃÎÊÇÒ¹Ø¼ü²éÑ¯³É¹¦¡£
+- `Offline`£º½¡¿µ¼ì²é»ò¹Ø¼ü²éÑ¯Ê§°Ü¡£
+- `Runtime Status` ²Ëµ¥Ïî¿É²é¿´ Agent ±¨¸æ×´Ì¬¡£
