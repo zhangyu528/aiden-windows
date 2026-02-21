@@ -7,6 +7,7 @@ namespace Aiden.TrayMonitor.ViewModels;
 public partial class TrayPanelViewModel : ObservableObject
 {
     private readonly TelemetryService _telemetryService;
+    private readonly CliProvisioningDialogService _cliProvisioningDialogService;
 
     [ObservableProperty] private double _inputTokens;
     [ObservableProperty] private double _outputTokens;
@@ -21,14 +22,20 @@ public partial class TrayPanelViewModel : ObservableObject
     [ObservableProperty] private string _statusText = "Offline";
     [ObservableProperty] private string _updatedAt = "-";
 
-    public TrayPanelViewModel(TelemetryService telemetryService)
+    public TrayPanelViewModel(
+        TelemetryService telemetryService,
+        CliProvisioningDialogService cliProvisioningDialogService)
     {
         _telemetryService = telemetryService;
+        _cliProvisioningDialogService = cliProvisioningDialogService;
         _telemetryService.SnapshotUpdated += OnSnapshotUpdated;
     }
 
     [RelayCommand]
     private Task RefreshAsync() => _telemetryService.RefreshOnceAsync();
+
+    [RelayCommand]
+    private void OpenSettings() => _cliProvisioningDialogService.ShowSettingsDialog();
 
     private void OnSnapshotUpdated(TelemetrySnapshot snapshot)
     {

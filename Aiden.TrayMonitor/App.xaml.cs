@@ -16,6 +16,7 @@ public partial class App : System.Windows.Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
         _host = Host.CreateDefaultBuilder()
             .ConfigureAppConfiguration(cfg =>
@@ -33,8 +34,11 @@ public partial class App : System.Windows.Application
                 services.Configure<ModelCapabilityOptions>(ctx.Configuration.GetSection("ModelCapability"));
                 services.AddHttpClient();
 
+                services.AddSingleton<UserStateService>();
                 services.AddSingleton<VmClient>();
                 services.AddSingleton<RuntimeAgentClient>();
+                services.AddSingleton<CliProvisioningService>();
+                services.AddSingleton<CliProvisioningDialogService>();
                 services.AddSingleton<TelemetryService>();
                 services.AddSingleton<WindowPositionService>();
                 services.AddSingleton<TrayPanelViewModel>();
@@ -47,6 +51,34 @@ public partial class App : System.Windows.Application
 
         var runtimeAgent = _host.Services.GetRequiredService<RuntimeAgentClient>();
         await runtimeAgent.EnsureReadyAsync(CancellationToken.None);
+
+        var userState = _host.Services.GetRequiredService<UserStateService>();
+        var provisioningService = _host.Services.GetRequiredService<CliProvisioningService>();
+        var onboardingCompleted = await userState.IsOnboardingCompletedAsync(CancellationToken.None);
+
+        if (!onboardingCompleted)
+        {
+            var states = await provisioningService.GetStatesAsync(CancellationToken.None);
+            var allEnabled = states.Count > 0 && states.All(s => s.IsEnabled);
+            if (allEnabled)
+            {
+                await userState.MarkOnboardingCompletedAsync(CancellationToken.None);
+                onboardingCompleted = true;
+            }
+        }
+
+        if (!onboardingCompleted)
+        {
+            var provisioningDialog = _host.Services.GetRequiredService<CliProvisioningDialogService>();
+            var ok = provisioningDialog.ShowOnboardingDialog();
+            if (!ok)
+            {
+                Shutdown();
+                return;
+            }
+
+            await userState.MarkOnboardingCompletedAsync(CancellationToken.None);
+        }
 
         var telemetry = _host.Services.GetRequiredService<TelemetryService>();
         telemetry.Start();

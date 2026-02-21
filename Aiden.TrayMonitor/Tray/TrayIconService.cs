@@ -12,18 +12,21 @@ public sealed class TrayIconService : IDisposable
     private readonly WindowPositionService _windowPositionService;
     private readonly TelemetryService _telemetryService;
     private readonly RuntimeAgentClient _runtimeAgentClient;
+    private readonly CliProvisioningDialogService _cliProvisioningDialogService;
     private WinForms.NotifyIcon? _notifyIcon;
 
     public TrayIconService(
         TrayPanelWindow panelWindow,
         WindowPositionService windowPositionService,
         TelemetryService telemetryService,
-        RuntimeAgentClient runtimeAgentClient)
+        RuntimeAgentClient runtimeAgentClient,
+        CliProvisioningDialogService cliProvisioningDialogService)
     {
         _panelWindow = panelWindow;
         _windowPositionService = windowPositionService;
         _telemetryService = telemetryService;
         _runtimeAgentClient = runtimeAgentClient;
+        _cliProvisioningDialogService = cliProvisioningDialogService;
     }
 
     public void Initialize()
@@ -36,6 +39,7 @@ public sealed class TrayIconService : IDisposable
         var contextMenu = new WinForms.ContextMenuStrip();
         contextMenu.Items.Add("Refresh", null, async (_, _) => await _telemetryService.RefreshOnceAsync());
         contextMenu.Items.Add("Show/Hide", null, (_, _) => TogglePanel());
+        contextMenu.Items.Add("CLI Settings", null, (_, _) => _cliProvisioningDialogService.ShowSettingsDialog());
         contextMenu.Items.Add("Runtime Status", null, async (_, _) => await ShowRuntimeStatusAsync());
         contextMenu.Items.Add("Restart Runtime", null, async (_, _) => await RestartRuntimeAsync());
         contextMenu.Items.Add(new WinForms.ToolStripSeparator());

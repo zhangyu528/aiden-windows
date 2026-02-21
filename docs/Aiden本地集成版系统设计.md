@@ -1,7 +1,7 @@
 ﻿# Aiden 本地集成版系统设计（当前实现）
 
 ## 1. 目标与范围
-面向 Windows 托盘监控场景，展示 Gemini CLI 的 telemetry 指标，并在关闭 UI 后保持后台采集。
+面向 Windows 托盘监控场景，展示已开通 CLI（Gemini/Codex/Claude Code）的 telemetry 指标，并在关闭 UI 后保持后台采集。
 
 本期目标：
 - 托盘常驻显示核心数据。
@@ -17,9 +17,9 @@
 - Web 界面。
 
 ## 2. 链路
-`Gemini CLI -> OTel Collector -> VictoriaMetrics -> RuntimeAgent -> WPF Tray`
+`Gemini CLI / Codex CLI / Claude Code CLI -> OTel Collector -> VictoriaMetrics -> RuntimeAgent -> WPF Tray`
 
-- 上报链路：Gemini CLI 通过 OTLP gRPC/protobuf 发到 Collector，Collector 再转发到 VM。
+- 上报链路：已开通 CLI 通过 OTLP 发到 Collector，Collector 再转发到 VM。
 - 守护链路：RuntimeAgent 周期健康检查并自动拉起 VM / Collector。
 - 查询链路：Tray App 通过 VM 的 `/api/v1/query` 查询展示。
 
@@ -28,9 +28,27 @@
   - `RuntimeSupervisor`：健康检查、指数退避重启、控制端点（`/healthz`、`/status`、`/restart`）。
   - `VmProcessService` / `CollectorProcessService`：VM/Collector 拉起与健康探测。
 - `TrayPanelWindow`：展示 Input/Output/User/User Active/Cost/Context/Status。
+- `CliProvisioningWindow`：首次引导与 Settings 复用的 CLI 开通管理窗口。
 - `TelemetryService`：按 `Vm.PollSeconds` 轮询，支持手动刷新。
 - `VmClient`：封装 MetricsQL 查询与业务口径。
 - `RuntimeAgentClient`：Tray 侧 Agent 探活、状态查询与重启请求。
+- `CliProvisioningService`：检测 CLI 安装状态，读写 Gemini/Codex/Claude telemetry 配置。
+- `UserStateService`：管理首次引导完成标记。
+
+### 3.1 CLI 配置字段对齐（当前实现）
+- Gemini CLI：`%USERPROFILE%\\.gemini\\settings.json`
+  - 路径：`telemetry.*`
+  - 开启：`enabled=true`、`target=local`、`useCollector=true`、`otlpProtocol=grpc`、`otlpEndpoint=http://127.0.0.1:4317`、`logPrompts=false`
+  - 关闭：`enabled=false`（其余字段保留）
+- Codex CLI：`%USERPROFILE%\\.codex\\config.toml`
+  - 路径：`[otel]`
+  - 开启：`environment="dev"`、`log_user_prompt=false`、`exporter={ otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }`、`trace_exporter={ otlp-grpc = { endpoint = "http://127.0.0.1:4317" } }`
+  - 关闭：`exporter="none"`、`trace_exporter="none"`
+- Claude Code CLI：`%USERPROFILE%\\.claude\\settings.json`
+  - 路径：`env.*`
+  - 开启：`CLAUDE_CODE_ENABLE_TELEMETRY=1`、`OTEL_METRICS_EXPORTER=otlp`、`OTEL_LOGS_EXPORTER=otlp`、`OTEL_EXPORTER_OTLP_PROTOCOL=grpc`、`OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317`
+  - 关闭：`CLAUDE_CODE_ENABLE_TELEMETRY=0`、`OTEL_METRICS_EXPORTER=none`、`OTEL_LOGS_EXPORTER=none`
+- 安装态判定：优先 `where.exe <cli>`；若失败但配置文件存在，仍视为已安装。
 
 ## 4. 配置
 
@@ -96,8 +114,14 @@
 ## 6. 运行时流程
 1. Tray 启动：加载配置 -> `RuntimeAgentClient.EnsureReadyAsync()`。
 2. Agent 探活失败：Tray 拉起 Agent，并等待健康。
-3. Tray 开始轮询显示。
-4. 用户点击 Exit：仅关闭 Tray，Agent 持续运行。
+3. 读取 `UserStateService`：
+   - 若 `OnboardingCompleted=false` 且三项 CLI 未全部开通，则弹出引导页。
+   - 若 `OnboardingCompleted=false` 且三项 CLI 已全部开通，则自动标记完成并跳过引导。
+4. 引导页行为：
+   - 点击 Continue：继续启动 Tray，并标记 `OnboardingCompleted=true`。
+   - 直接关闭引导页：应用显式退出，不继续启动 Tray。
+5. 引导通过后，Tray 开始轮询显示。
+6. 用户点击 Exit：仅关闭 Tray，Agent 持续运行。
 
 ## 7. 升级与卸载
 ### 7.1 升级（停机升级）
