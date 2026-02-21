@@ -14,6 +14,8 @@ public sealed class VmClient
     private readonly VmOptions _options;
     private readonly PricingOptions _pricing;
     private readonly ModelCapabilityOptions _modelCapability;
+    private readonly object _serviceNameLock = new();
+    private string? _serviceNameFilterOverride;
 
     public VmClient(
         IHttpClientFactory httpClientFactory,
@@ -47,12 +49,13 @@ public sealed class VmClient
             {
                 InputTokens = inputTask.Result,
                 OutputTokens = outputTask.Result,
-                InputText = isKnownUser ? $"{inputTask.Result:N0}" : "N/A",
-                OutputText = isKnownUser ? $"{outputTask.Result:N0}" : "N/A",
+                InputText = IsCodexServiceSelected() ? "N/A" : (isKnownUser ? FormatCompactTokenValue(inputTask.Result) : "N/A"),
+                OutputText = IsCodexServiceSelected() ? "N/A" : (isKnownUser ? FormatCompactTokenValue(outputTask.Result) : "N/A"),
                 CurrentUserEmail = latestUser.Email,
                 UserActiveAtText = userActiveAtText,
                 SessionCostUsd = costTask.Result,
                 ContextWindowM = context.ContextWindowM,
+                ContextPercent = context.ContextPercent,
                 ContextText = context.ContextText,
                 Online = true,
                 UpdatedAt = DateTimeOffset.Now
@@ -64,8 +67,23 @@ public sealed class VmClient
         }
     }
 
+    public void SetServiceNameFilterOverride(string? serviceNameFilter)
+    {
+        lock (_serviceNameLock)
+        {
+            _serviceNameFilterOverride = string.IsNullOrWhiteSpace(serviceNameFilter)
+                ? null
+                : serviceNameFilter.Trim();
+        }
+    }
+
     private async Task<double> QueryTokenWithFallbackAsync(string tokenType, int fallbackDays, CancellationToken cancellationToken)
     {
+        if (IsCodexServiceSelected())
+        {
+            return 0;
+        }
+
         var instant = await QueryScalarOrEmptyAsync(BuildTokenQuery(tokenType), cancellationToken);
         if (instant.HasValue)
         {
@@ -108,6 +126,11 @@ public sealed class VmClient
 
     private async Task<double> QueryCostWithFallbackAsync(int fallbackDays, CancellationToken cancellationToken)
     {
+        if (IsCodexServiceSelected())
+        {
+            return 0;
+        }
+
         var instantResult = await QueryResultAsync(BuildModelTokenQuery(), cancellationToken);
         if (instantResult.ValueKind == JsonValueKind.Array && instantResult.GetArrayLength() > 0)
         {
@@ -205,6 +228,11 @@ public sealed class VmClient
 
     private async Task<LatestUserInfo> QueryLatestUserAsync(CancellationToken cancellationToken)
     {
+        if (IsCodexServiceSelected())
+        {
+            return await QueryLatestCodexUserAsync(cancellationToken);
+        }
+
         var result = await QueryResultAsync(BuildLatestUserQuery(), cancellationToken);
         if (result.ValueKind == JsonValueKind.Array && result.GetArrayLength() > 0)
         {
@@ -312,28 +340,33 @@ public sealed class VmClient
         return $"{days} days";
     }
 
-    private async Task<(double ContextWindowM, string ContextText)> QueryContextForUserAsync(string userEmail, int fallbackDays, CancellationToken cancellationToken)
+    private async Task<(double ContextWindowM, string ContextText, double ContextPercent)> QueryContextForUserAsync(string userEmail, int fallbackDays, CancellationToken cancellationToken)
     {
+        if (IsCodexServiceSelected())
+        {
+            return (0, "N/A", 0);
+        }
+
         if (string.Equals(userEmail, "Unknown", StringComparison.OrdinalIgnoreCase))
         {
-            return (0, "N/A");
+            return (0, "N/A", 0);
         }
 
         var sessionId = await QueryActiveSessionIdForUserAsync(userEmail, fallbackDays, cancellationToken);
         if (string.IsNullOrWhiteSpace(sessionId))
         {
-            return (0, "N/A");
+            return (0, "N/A", 0);
         }
 
         var model = await QueryLatestModelForSessionAsync(userEmail, sessionId, fallbackDays, cancellationToken);
         if (string.IsNullOrWhiteSpace(model))
         {
-            return (0, "N/A");
+            return (0, "N/A", 0);
         }
 
         if (!_modelCapability.ModelContextWindowTokens.TryGetValue(model, out var windowTokens) || windowTokens <= 0)
         {
-            return (0, "N/A");
+            return (0, "N/A", 0);
         }
 
         var instant = await QueryScalarOrEmptyAsync(BuildSessionContextUsageQuery(userEmail, sessionId), cancellationToken);
@@ -343,15 +376,14 @@ public sealed class VmClient
             var fallback = await QueryScalarOrEmptyAsync(BuildSessionContextUsageFallbackQuery(userEmail, sessionId, fallbackDays), cancellationToken);
             if (!fallback.HasValue)
             {
-                return (0, "N/A");
+                return (0, "N/A", 0);
             }
 
             usedTokens = fallback.Value;
         }
 
-        var m = usedTokens / 1_000_000d;
         var percent = (usedTokens / windowTokens) * 100d;
-        return (m, $"{m:F3} M ({percent:F1}%)");
+        return (usedTokens / 1_000_000d, FormatCompactTokenValue(usedTokens), Math.Clamp(percent, 0d, 100d));
     }
 
     private async Task<string?> QueryActiveSessionIdForUserAsync(string userEmail, int fallbackDays, CancellationToken cancellationToken)
@@ -540,15 +572,89 @@ public sealed class VmClient
 
     private string GetServiceNameFilter()
     {
+        lock (_serviceNameLock)
+        {
+            if (!string.IsNullOrWhiteSpace(_serviceNameFilterOverride))
+            {
+                return _serviceNameFilterOverride;
+            }
+        }
+
         return string.IsNullOrWhiteSpace(_options.ServiceNameFilter)
             ? "gemini-cli"
             : _options.ServiceNameFilter.Trim();
+    }
+
+    private bool IsCodexServiceSelected()
+    {
+        var serviceName = GetServiceNameFilter();
+        return string.Equals(serviceName, "codex-cli", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task<LatestUserInfo> QueryLatestCodexUserAsync(CancellationToken cancellationToken)
+    {
+        var result = await QueryResultAsync(BuildCodexLatestUserQuery(), cancellationToken);
+        if (result.ValueKind == JsonValueKind.Array && result.GetArrayLength() > 0)
+        {
+            var instantUser = ExtractLatestUserInfoOrUnknown(result);
+            if (!string.Equals(instantUser.Email, "Unknown", StringComparison.OrdinalIgnoreCase))
+            {
+                return instantUser;
+            }
+        }
+
+        result = await QueryResultAsync(BuildCodexLatestUserFallbackQuery(ResolveMaxHistoryDays()), cancellationToken);
+        if (result.ValueKind == JsonValueKind.Array && result.GetArrayLength() > 0)
+        {
+            return ExtractLatestUserInfoOrUnknown(result);
+        }
+
+        return new LatestUserInfo("Unknown", null);
+    }
+
+    private string BuildCodexLatestUserQuery()
+    {
+        var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
+        return $"topk(1, max by (user.email) (timestamp(codex_log_records_total{{service.name=\"{escapedServiceName}\",user.email!=\"\"}})))";
+    }
+
+    private string BuildCodexLatestUserFallbackQuery(int fallbackDays)
+    {
+        var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
+        var days = Math.Max(1, fallbackDays);
+        return $"topk(1, max by (user.email) (timestamp(last_over_time(codex_log_records_total{{service.name=\"{escapedServiceName}\",user.email!=\"\"}}[{days}d]))))";
     }
 
     private static string EscapePromQlLabelValue(string value)
     {
         return value.Replace("\\", "\\\\", StringComparison.Ordinal)
             .Replace("\"", "\\\"", StringComparison.Ordinal);
+    }
+
+    private static string FormatCompactTokenValue(double value)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value) || value < 0)
+        {
+            return "0";
+        }
+
+        if (value >= 1_000_000d)
+        {
+            var m = value / 1_000_000d;
+            return m >= 10d
+                ? $"{m:0}M"
+                : $"{m:0.#}M";
+        }
+
+        if (value >= 1_000d)
+        {
+            var k = value / 1_000d;
+            return k >= 100d
+                ? $"{k:0}K"
+                : $"{k:0.#}K";
+        }
+
+        return $"{value:0}";
     }
 
     private async Task<JsonElement> QueryResultAsync(string query, CancellationToken cancellationToken)

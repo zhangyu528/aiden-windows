@@ -8,21 +8,17 @@ namespace Aiden.TrayMonitor.Views;
 public partial class CliProvisioningWindow : Window
 {
     private readonly CliProvisioningService _provisioningService;
-    private readonly bool _requireAtLeastOneEnabled;
     private readonly CliProvisioningWindowModel _model;
 
-    public CliProvisioningWindow(CliProvisioningService provisioningService, bool requireAtLeastOneEnabled)
+    public CliProvisioningWindow(CliProvisioningService provisioningService)
     {
         _provisioningService = provisioningService;
-        _requireAtLeastOneEnabled = requireAtLeastOneEnabled;
 
         _model = new CliProvisioningWindowModel
         {
-            TitleText = requireAtLeastOneEnabled ? "Welcome - CLI Setup" : "CLI Settings",
-            SubtitleText = requireAtLeastOneEnabled
-                ? "Enable at least one installed CLI to start telemetry collection."
-                : "Manage Gemini/Codex/Claude telemetry switches. Uninstalled clients show install hints.",
-            ContinueButtonText = requireAtLeastOneEnabled ? "Continue" : "Close"
+            TitleText = "CLI Management Settings",
+            SubtitleText = "Manage Gemini/Codex/Claude telemetry switches. Uninstalled clients show install hints.",
+            ContinueButtonText = "Close"
         };
 
         InitializeComponent();
@@ -42,6 +38,7 @@ public partial class CliProvisioningWindow : Window
                 DisplayName = state.DisplayName,
                 IsInstalled = state.IsInstalled,
                 IsEnabled = state.IsEnabled,
+                IconGlyph = GetIconGlyph(state.Provider),
                 InstallHint = state.InstallHint,
                 ConfigPath = state.ConfigPath
             });
@@ -78,11 +75,8 @@ public partial class CliProvisioningWindow : Window
 
     private void UpdateContinueState()
     {
-        var hasEnabled = _model.Items.Any(i => i.IsInstalled && i.IsEnabled);
-        _model.CanContinue = !_requireAtLeastOneEnabled || hasEnabled;
-        _model.NoticeText = _model.CanContinue
-            ? string.Empty
-            : "You must enable at least one installed CLI to continue.";
+        _model.CanContinue = true;
+        _model.NoticeText = string.Empty;
     }
 
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
@@ -101,6 +95,30 @@ public partial class CliProvisioningWindow : Window
         Close();
     }
 
+    private void OnCloseClick(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void OnCopyInstallCommandClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button { DataContext: CliProvisioningRow row } ||
+            string.IsNullOrWhiteSpace(row.InstallHint))
+        {
+            return;
+        }
+
+        System.Windows.Clipboard.SetText(row.InstallHint);
+    }
+
+    private static string GetIconGlyph(CliProviderType provider) => provider switch
+    {
+        CliProviderType.Gemini => "\uEB8E",
+        CliProviderType.Codex => "\uEB8E",
+        CliProviderType.Claude => "\uEB8E",
+        _ => "\uEB8E"
+    };
+
     private sealed partial class CliProvisioningWindowModel : ObservableObject
     {
         [ObservableProperty] private string _titleText = string.Empty;
@@ -115,6 +133,7 @@ public partial class CliProvisioningWindow : Window
     {
         public CliProviderType Provider { get; init; }
         public string DisplayName { get; init; } = string.Empty;
+        public string IconGlyph { get; init; } = "\uE946";
         public bool IsInstalled { get; init; }
         public string InstallStatusText => IsInstalled ? "Installed" : "Not Installed";
         [ObservableProperty] private bool _isEnabled;

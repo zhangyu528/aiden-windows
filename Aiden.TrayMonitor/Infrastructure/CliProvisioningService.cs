@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Options;
@@ -23,8 +24,10 @@ public sealed class CliProvisioningService
         {
             cancellationToken.ThrowIfCancellationRequested();
             var path = GetConfigPath(provider);
-            var installed = await IsInstalledAsync(provider, cancellationToken);
-            var enabled = installed && await ReadEnabledAsync(provider, path, cancellationToken);
+            var commandAvailable = await CheckCommandAvailableAsync(provider, cancellationToken);
+            var configFileExists = File.Exists(path);
+            var installed = commandAvailable;
+            var enabled = installed && configFileExists && await ReadEnabledAsync(provider, path, cancellationToken);
 
             result.Add(new CliProvisioningState
             {
@@ -42,7 +45,7 @@ public sealed class CliProvisioningService
 
     public async Task<bool> SetEnabledAsync(CliProviderType provider, bool enabled, CancellationToken cancellationToken)
     {
-        if (!await IsInstalledAsync(provider, cancellationToken))
+        if (!await CheckCommandAvailableAsync(provider, cancellationToken))
         {
             return false;
         }
@@ -92,7 +95,7 @@ public sealed class CliProvisioningService
         _ => string.Empty
     };
 
-    private static async Task<bool> IsInstalledAsync(CliProviderType provider, CancellationToken cancellationToken)
+    private static async Task<bool> CheckCommandAvailableAsync(CliProviderType provider, CancellationToken cancellationToken)
     {
         var command = provider switch
         {
@@ -119,12 +122,7 @@ public sealed class CliProvisioningService
         }
 
         await process.WaitForExitAsync(cancellationToken);
-        if (process.ExitCode == 0)
-        {
-            return true;
-        }
-
-        return File.Exists(GetConfigPath(provider));
+        return process.ExitCode == 0;
     }
 
     private static async Task<bool> ReadEnabledAsync(CliProviderType provider, string path, CancellationToken cancellationToken)
@@ -192,7 +190,8 @@ public sealed class CliProvisioningService
                 !value.Contains("\"none\"", StringComparison.OrdinalIgnoreCase) &&
                 !value.Equals("none", StringComparison.OrdinalIgnoreCase);
 
-            return IsEnabledValue(exporterValue) || IsEnabledValue(traceExporterValue);
+            return IsEnabledValue(exporterValue) ||
+                   IsEnabledValue(traceExporterValue);
         }
         catch
         {
@@ -287,6 +286,7 @@ public sealed class CliProvisioningService
         env["CLAUDE_CODE_ENABLE_TELEMETRY"] = enabled ? "1" : "0";
         env["OTEL_METRICS_EXPORTER"] = enabled ? "otlp" : "none";
         env["OTEL_LOGS_EXPORTER"] = enabled ? "otlp" : "none";
+        env["OTEL_TRACES_EXPORTER"] = enabled ? "otlp" : "none";
         env["OTEL_EXPORTER_OTLP_PROTOCOL"] = "grpc";
         env["OTEL_EXPORTER_OTLP_ENDPOINT"] = BuildCollectorGrpcEndpoint();
         root["env"] = env;
@@ -298,8 +298,29 @@ public sealed class CliProvisioningService
 
     private string BuildCollectorGrpcEndpoint()
     {
-        var baseUrl = _collectorOptions.BaseUrl?.TrimEnd('/') ?? "http://127.0.0.1";
-        return $"{baseUrl}:{_collectorOptions.GrpcPort}";
+        var url = string.IsNullOrWhiteSpace(_collectorOptions.BaseUrl)
+            ? "http://127.0.0.1"
+            : _collectorOptions.BaseUrl.Trim();
+
+        if (!url.Contains("://", StringComparison.Ordinal))
+        {
+            url = "http://" + url;
+        }
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return $"http://127.0.0.1:{_collectorOptions.GrpcPort}";
+        }
+
+        var builder = new UriBuilder(uri);
+        var authority = uri.GetLeftPart(UriPartial.Authority);
+        var hasExplicitPort = Regex.IsMatch(authority, @":\d+$");
+        if (!hasExplicitPort)
+        {
+            builder.Port = _collectorOptions.GrpcPort;
+        }
+
+        return builder.Uri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
     }
 
     private static string GetTomlSection(string source, string sectionName)

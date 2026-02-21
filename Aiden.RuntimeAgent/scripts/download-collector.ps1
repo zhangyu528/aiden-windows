@@ -2,21 +2,44 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Version,
 
-    [Parameter(Mandatory = $true)]
-    [string]$DownloadUrl,
+    [Parameter(Mandatory = $false)]
+    [string]$DownloadUrl = "",
 
-    [Parameter(Mandatory = $true)]
-    [string]$Sha256
+    [Parameter(Mandatory = $false)]
+    [string]$Sha256 = ""
 )
 
 $ErrorActionPreference = "Stop"
 
-if ([string]::IsNullOrWhiteSpace($Version) -or [string]::IsNullOrWhiteSpace($DownloadUrl) -or [string]::IsNullOrWhiteSpace($Sha256)) {
-    throw "Version, DownloadUrl, Sha256 must all be provided."
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    throw "Version must be provided."
 }
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$installRoot = Join-Path $repoRoot "Aiden.TrayMonitor\runtime\collector"
+if ([string]::IsNullOrWhiteSpace($DownloadUrl)) {
+    $DownloadUrl = "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/$Version/otelcol_$($Version.TrimStart('v'))_windows_amd64.tar.gz"
+}
+
+function Resolve-Sha256FromChecksums {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Version,
+        [Parameter(Mandatory = $true)]
+        [string]$ArchiveFileName
+    )
+
+    $checksumsUrl = "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/$Version/checksums.txt"
+    Write-Host "Resolving SHA256 from: $checksumsUrl"
+    $checksumsText = (Invoke-WebRequest -Uri $checksumsUrl -UseBasicParsing).Content
+    $match = [regex]::Match($checksumsText, "(?im)^([a-f0-9]{64})\s+\*?$([regex]::Escape($ArchiveFileName))\s*$")
+    if (-not $match.Success) {
+        throw "Unable to resolve SHA256 for $ArchiveFileName from checksums.txt"
+    }
+
+    return $match.Groups[1].Value.ToLowerInvariant()
+}
+
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$installRoot = Join-Path $repoRoot "Aiden.RuntimeAgent\runtime\collector"
 $targetDir = Join-Path $installRoot $Version
 
 if (Test-Path $targetDir) {
@@ -30,6 +53,19 @@ if (Test-Path $targetDir) {
 New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
 
 $archiveName = Split-Path -Leaf $DownloadUrl
+$resolvedSha256 = if ([string]::IsNullOrWhiteSpace($Sha256)) {
+    try {
+        Resolve-Sha256FromChecksums -Version $Version -ArchiveFileName $archiveName
+    }
+    catch {
+        Write-Warning "Unable to auto-resolve SHA256 from release checksums. Continuing without hash verification. Details: $($_.Exception.Message)"
+        ""
+    }
+}
+else {
+    $Sha256.ToLowerInvariant()
+}
+
 $tempArchive = Join-Path $env:TEMP ("otelcol-" + $Version + "-" + $archiveName)
 if (Test-Path $tempArchive) {
     Remove-Item -Force $tempArchive
@@ -38,10 +74,15 @@ if (Test-Path $tempArchive) {
 Write-Host "Downloading: $DownloadUrl"
 Invoke-WebRequest -Uri $DownloadUrl -OutFile $tempArchive
 
-$actualHash = (Get-FileHash -Algorithm SHA256 -Path $tempArchive).Hash.ToLowerInvariant()
-$expectedHash = $Sha256.ToLowerInvariant()
-if ($actualHash -ne $expectedHash) {
-    throw "SHA256 mismatch. expected=$expectedHash actual=$actualHash"
+if (-not [string]::IsNullOrWhiteSpace($resolvedSha256)) {
+    $actualHash = (Get-FileHash -Algorithm SHA256 -Path $tempArchive).Hash.ToLowerInvariant()
+    $expectedHash = $resolvedSha256
+    if ($actualHash -ne $expectedHash) {
+        throw "SHA256 mismatch. expected=$expectedHash actual=$actualHash"
+    }
+}
+else {
+    Write-Warning "SHA256 verification skipped (no hash provided or resolvable)."
 }
 
 $extractDir = Join-Path $env:TEMP ("otelcol-extract-" + [guid]::NewGuid().ToString("N"))

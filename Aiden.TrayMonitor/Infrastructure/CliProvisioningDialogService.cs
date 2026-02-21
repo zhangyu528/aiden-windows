@@ -14,7 +14,7 @@ public sealed class CliProvisioningDialogService
 
     public bool ShowOnboardingDialog()
     {
-        var window = new CliProvisioningWindow(_provisioningService, requireAtLeastOneEnabled: true);
+        var window = new OnboardingProvisioningWindow(_provisioningService);
         var result = window.ShowDialog();
         return result == true;
     }
@@ -22,7 +22,7 @@ public sealed class CliProvisioningDialogService
     public void ShowSettingsDialog()
     {
         var owner = System.Windows.Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive);
-        var window = new CliProvisioningWindow(_provisioningService, requireAtLeastOneEnabled: false);
+        var window = new CliProvisioningWindow(_provisioningService);
         if (owner is not null)
         {
             window.Owner = owner;

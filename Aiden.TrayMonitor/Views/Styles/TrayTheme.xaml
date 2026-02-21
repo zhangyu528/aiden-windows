@@ -1,0 +1,82 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <SolidColorBrush x:Key="ThemePrimaryBrush" Color="#FF2B8CEE" />
+  <SolidColorBrush x:Key="ThemePanelBrush" Color="#F0111725" />
+  <SolidColorBrush x:Key="ThemePanelBorderBrush" Color="#30FFFFFF" />
+  <SolidColorBrush x:Key="ThemeCardBrush" Color="#10FFFFFF" />
+  <SolidColorBrush x:Key="ThemeCardBorderBrush" Color="#22FFFFFF" />
+  <SolidColorBrush x:Key="ThemeTextMainBrush" Color="#FFE2E8F0" />
+  <SolidColorBrush x:Key="ThemeTextMutedBrush" Color="#FF94A3B8" />
+  <SolidColorBrush x:Key="ThemeTextDimBrush" Color="#FF64748B" />
+  <SolidColorBrush x:Key="ThemeOnlineBrush" Color="#FF4ADE80" />
+  <SolidColorBrush x:Key="ThemeOfflineBrush" Color="#FFF87171" />
+
+  <Style x:Key="ThemePanelBorderStyle" TargetType="Border">
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Background" Value="{StaticResource ThemePanelBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource ThemePanelBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style x:Key="ThemeCardBorderStyle" TargetType="Border">
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Background" Value="{StaticResource ThemeCardBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource ThemeCardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="12" />
+  </Style>
+
+  <Style x:Key="ThemeIconButtonStyle" TargetType="Button">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="30" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="#0DFFFFFF" />
+    <Setter Property="BorderBrush" Value="#38FFFFFF" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource ThemeTextMutedBrush}" />
+    <Setter Property="FontFamily" Value="pack://application:,,,/Aiden.TrayMonitor;component/Assets/Fonts/#Material Symbols Outlined" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border CornerRadius="9"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="ThemeActionButtonStyle" TargetType="Button">
+    <Setter Property="Padding" Value="12,6" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource ThemeTextMainBrush}" />
+    <Setter Property="Background" Value="#122B8CEE" />
+    <Setter Property="BorderBrush" Value="#572B8CEE" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border CornerRadius="10"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="ThemeDangerButtonStyle" TargetType="Button" BasedOn="{StaticResource ThemeActionButtonStyle}">
+    <Setter Property="Foreground" Value="#FFFCA5A5" />
+    <Setter Property="Background" Value="#1AEF4444" />
+    <Setter Property="BorderBrush" Value="#60EF4444" />
+  </Style>
+</ResourceDictionary>

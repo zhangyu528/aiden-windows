@@ -17,8 +17,8 @@ dotnet run
 - Auto-hide panel on focus loss
 - Show latest reported user email (`user.email`, fallback `Unknown`)
 - Show user active age in days since latest sample (fallback `N/A`)
-- Auto-start VictoriaMetrics from `Aiden.TrayMonitor/runtime/vm/<version>/victoria-metrics.exe` if not already running
-- Auto-start OTel Collector from `Aiden.TrayMonitor/runtime/collector/<version>/otelcol*.exe` if available
+- Auto-start VictoriaMetrics from `Aiden.RuntimeAgent/runtime/vm/<version>/victoria-metrics.exe` if not already running
+- Auto-start OTel Collector from `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol.exe` if available
 - Poll VictoriaMetrics every 5 seconds
 - Manual refresh support
 
@@ -26,12 +26,12 @@ dotnet run
 
 Place binaries under:
 
-- `Aiden.TrayMonitor/runtime/vm/<version>/victoria-metrics.exe`
-- `Aiden.TrayMonitor/runtime/collector/<version>/otelcol*.exe`
+- `Aiden.RuntimeAgent/runtime/vm/<version>/victoria-metrics.exe`
+- `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol.exe`
 
 The app will generate collector config at runtime:
 
-- `Aiden.TrayMonitor/runtime/collector/<version>/config/otelcol-vm.yaml`
+- `Aiden.RuntimeAgent/runtime/collector/<version>/config/otelcol-vm.yaml`
 
 ## Config
 Shared runtime settings are loaded from `runtime.shared.json`:

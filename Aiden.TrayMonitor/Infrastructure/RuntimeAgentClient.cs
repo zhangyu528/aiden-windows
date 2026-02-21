@@ -89,6 +89,11 @@ public sealed class RuntimeAgentClient
         }
     }
 
+    public Task<bool> CheckHealthAsync(CancellationToken cancellationToken)
+    {
+        return IsHealthyAsync(cancellationToken);
+    }
+
     private async Task<bool> IsHealthyAsync(CancellationToken cancellationToken)
     {
         try

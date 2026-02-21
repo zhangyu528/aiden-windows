@@ -15,8 +15,8 @@ if ([string]::IsNullOrWhiteSpace($Version) -or [string]::IsNullOrWhiteSpace($Dow
     throw "Version, DownloadUrl, Sha256 must all be provided."
 }
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$installRoot = Join-Path $repoRoot "Aiden.TrayMonitor\runtime\vm"
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$installRoot = Join-Path $repoRoot "Aiden.RuntimeAgent\runtime\vm"
 $targetDir = Join-Path $installRoot $Version
 $exePath = Join-Path $targetDir "victoria-metrics.exe"
 

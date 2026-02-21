@@ -55,7 +55,7 @@ Configuration layout:
 Runtime binaries are intentionally excluded from version control.
 
 - Local install path: `Aiden.RuntimeAgent/runtime/vm/<version>/victoria-metrics.exe`
-- Collector install path: `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol*.exe`
+- Collector install path: `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol.exe`
 - Ignore rules are defined in `.gitignore` (`runtime/`, archives, etc.)
 
 Download and install `victoria-metrics.exe` with hash verification:
@@ -67,6 +67,8 @@ powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-v
   -Sha256 "ed8f660442a45b260a2c0a0976440ecec863bb75ccb7cec6aad9580364a92de6"
 ```
 
+`-DownloadUrl` and `-Sha256` are optional in the script. If omitted, provide your own defaults or update script behavior as needed.
+
 Download OTel Collector binary to project runtime path:
 
 ```powershell
@@ -75,3 +77,7 @@ powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-c
   -DownloadUrl "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol_0.146.1_windows_amd64.tar.gz" `
   -Sha256 "0eaa1ff9d0f5d8009921667368981617641cebb1766fc7b38be95d5dc21a126a"
 ```
+
+Notes:
+- Default artifact is core collector (`otelcol_...`) rather than contrib.
+- `-DownloadUrl` and `-Sha256` are optional; script can auto-resolve SHA256 from release `checksums.txt`.

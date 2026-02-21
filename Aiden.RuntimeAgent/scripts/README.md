@@ -28,7 +28,7 @@ Download and install OTel Collector binary to project runtime path (not tracked 
 
 Default install location:
 
-- `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol*.exe`
+- `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol.exe`
 
 Usage:
 
@@ -38,6 +38,12 @@ powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-c
   -DownloadUrl "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol_0.146.1_windows_amd64.tar.gz" `
   -Sha256 "0eaa1ff9d0f5d8009921667368981617641cebb1766fc7b38be95d5dc21a126a"
 ```
+
+Notes:
+
+- `-DownloadUrl` and `-Sha256` are optional.
+- Default artifact is core collector (`otelcol_...`) instead of contrib.
+- When `-Sha256` is omitted, script tries to resolve hash from release `checksums.txt`.
 
 ## upgrade-stop-install-start.ps1
 

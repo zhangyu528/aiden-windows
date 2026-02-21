@@ -10,6 +10,7 @@ public sealed class TelemetrySnapshot
     public string UserActiveAtText { get; init; } = "N/A";
     public double SessionCostUsd { get; init; }
     public double ContextWindowM { get; init; }
+    public double ContextPercent { get; init; }
     public string ContextText { get; init; } = "N/A";
     public bool Online { get; init; }
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.Now;

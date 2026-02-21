@@ -11,6 +11,7 @@ namespace Aiden.TrayMonitor;
 
 public partial class App : System.Windows.Application
 {
+    private static readonly TimeSpan StartupLoadingMinDwell = TimeSpan.FromSeconds(3);
     private IHost? _host;
 
     protected override async void OnStartup(StartupEventArgs e)
@@ -49,12 +50,11 @@ public partial class App : System.Windows.Application
 
         await _host.StartAsync();
 
-        var runtimeAgent = _host.Services.GetRequiredService<RuntimeAgentClient>();
-        await runtimeAgent.EnsureReadyAsync(CancellationToken.None);
-
         var userState = _host.Services.GetRequiredService<UserStateService>();
-        var provisioningService = _host.Services.GetRequiredService<CliProvisioningService>();
         var onboardingCompleted = await userState.IsOnboardingCompletedAsync(CancellationToken.None);
+        var showStartupPhaseScreens = false;
+
+        var provisioningService = _host.Services.GetRequiredService<CliProvisioningService>();
 
         if (!onboardingCompleted)
         {
@@ -78,13 +78,84 @@ public partial class App : System.Windows.Application
             }
 
             await userState.MarkOnboardingCompletedAsync(CancellationToken.None);
+            onboardingCompleted = true;
+            showStartupPhaseScreens = true;
+        }
+
+        var runtimeAgent = _host.Services.GetRequiredService<RuntimeAgentClient>();
+        var runtimeReady = await EnsureRuntimeReadyAsync(runtimeAgent, showStartupPhaseScreens, CancellationToken.None);
+        if (!runtimeReady)
+        {
+            Shutdown();
+            return;
         }
 
         var telemetry = _host.Services.GetRequiredService<TelemetryService>();
         telemetry.Start();
 
         var tray = _host.Services.GetRequiredService<TrayIconService>();
-        tray.Initialize();
+        tray.Initialize(showPanelOnStartup: true);
+    }
+
+    private async Task<bool> EnsureRuntimeReadyAsync(
+        RuntimeAgentClient runtimeAgent,
+        bool showStartupPhaseScreens,
+        CancellationToken cancellationToken)
+    {
+        StartupLoadingWindow? loadingWindow = null;
+        DateTimeOffset? loadingShownAt = null;
+        if (showStartupPhaseScreens)
+        {
+            loadingWindow = new StartupLoadingWindow();
+            loadingWindow.Show();
+            loadingShownAt = DateTimeOffset.UtcNow;
+        }
+
+        try
+        {
+            while (true)
+            {
+                await runtimeAgent.EnsureReadyAsync(cancellationToken);
+                var healthy = await runtimeAgent.CheckHealthAsync(cancellationToken);
+                if (healthy)
+                {
+                    if (showStartupPhaseScreens && loadingShownAt.HasValue)
+                    {
+                        var elapsed = DateTimeOffset.UtcNow - loadingShownAt.Value;
+                        var remaining = StartupLoadingMinDwell - elapsed;
+                        if (remaining > TimeSpan.Zero)
+                        {
+                            await Task.Delay(remaining, cancellationToken);
+                        }
+                    }
+
+                    return true;
+                }
+
+                if (!showStartupPhaseScreens)
+                {
+                    return true;
+                }
+
+                loadingWindow?.Hide();
+                var errorWindow = new StartupErrorWindow
+                {
+                    ErrorText = await runtimeAgent.GetStatusTextAsync(cancellationToken)
+                };
+                var retry = errorWindow.ShowDialog() == true;
+                if (!retry)
+                {
+                    return false;
+                }
+
+                loadingWindow?.Show();
+                loadingShownAt = DateTimeOffset.UtcNow;
+            }
+        }
+        finally
+        {
+            loadingWindow?.Close();
+        }
     }
 
     protected override async void OnExit(ExitEventArgs e)

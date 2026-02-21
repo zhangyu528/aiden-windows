@@ -47,6 +47,11 @@ public sealed class TelemetryService
         SnapshotUpdated?.Invoke(snapshot);
     }
 
+    public void SetServiceNameFilter(string? serviceNameFilter)
+    {
+        _vmClient.SetServiceNameFilterOverride(serviceNameFilter);
+    }
+
     private async Task RunLoopAsync(CancellationToken cancellationToken)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(Math.Max(1, _options.PollSeconds)));

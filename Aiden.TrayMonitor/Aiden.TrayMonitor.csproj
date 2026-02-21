@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\Fonts\MaterialSymbolsOutlined.ttf" />
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

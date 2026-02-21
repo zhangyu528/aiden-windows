@@ -1,0 +1,417 @@
+<Window x:Class="Aiden.TrayMonitor.Views.OnboardingProvisioningWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Aiden Monitor"
+        Width="800"
+        Height="620"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True">
+  <Window.Resources>
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#FF1978E5" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#D9111821" />
+    <SolidColorBrush x:Key="PanelBorderBrush" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="CardBrush" Color="#0DFFFFFF" />
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#1AFFFFFF" />
+    <SolidColorBrush x:Key="TextMainBrush" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#FF94A3B8" />
+    <SolidColorBrush x:Key="TextDimBrush" Color="#FF64748B" />
+
+    <Style x:Key="TopCloseButtonStyle" TargetType="Button">
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="#FF94A3B8" />
+      <Setter Property="FontFamily" Value="pack://application:,,,/Aiden.TrayMonitor;component/Assets/Fonts/#Material Symbols Outlined" />
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Root" CornerRadius="8" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Root" Property="Background" Value="#33EF4444" />
+                <Setter Property="Foreground" Value="#FFF87171" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="OnboardingSwitchStyle" TargetType="CheckBox">
+      <Setter Property="Width" Value="48" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="CheckBox">
+            <Grid>
+              <Border x:Name="Track"
+                      CornerRadius="14"
+                      Background="#FF334155"
+                      BorderBrush="Transparent"
+                      BorderThickness="0" />
+              <Ellipse x:Name="Thumb"
+                       Width="16"
+                       Height="16"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center"
+                       Margin="6,0,0,0"
+                       Fill="White" />
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Track" Property="Background" Value="#FF1978E5" />
+                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
+                <Setter TargetName="Thumb" Property="Margin" Value="0,0,6,0" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="Track" Property="Opacity" Value="0.6" />
+                <Setter TargetName="Thumb" Property="Opacity" Value="0.6" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="ExitButtonStyle" TargetType="Button">
+      <Setter Property="Padding" Value="24,10" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="#FFD1D5DB" />
+      <Setter Property="FontFamily" Value="Inter" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Root" CornerRadius="8" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Root" Property="Background" Value="#14FFFFFF" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="ContinueButtonStyle" TargetType="Button">
+      <Setter Property="Padding" Value="40,10" />
+      <Setter Property="Background" Value="#FF1978E5" />
+      <Setter Property="BorderBrush" Value="#FF1978E5" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontFamily" Value="Inter" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Root"
+                    CornerRadius="8"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Root" Property="Opacity" Value="0.92" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Root" Property="Opacity" Value="0.85" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="Root" Property="Opacity" Value="0.4" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="StateBadgeBorderStyle" TargetType="Border">
+      <Setter Property="Padding" Value="8,2" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="#331978E5" />
+      <Setter Property="BorderBrush" Value="#1A1978E5" />
+      <Style.Triggers>
+        <MultiDataTrigger>
+          <MultiDataTrigger.Conditions>
+            <Condition Binding="{Binding IsInstalled}" Value="True" />
+            <Condition Binding="{Binding IsEnabled}" Value="True" />
+          </MultiDataTrigger.Conditions>
+          <Setter Property="Background" Value="#3322C55E" />
+          <Setter Property="BorderBrush" Value="#1A22C55E" />
+        </MultiDataTrigger>
+        <DataTrigger Binding="{Binding IsInstalled}" Value="False">
+          <Setter Property="Background" Value="#0DFFFFFF" />
+          <Setter Property="BorderBrush" Value="#14FFFFFF" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="StateBadgeTextStyle" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="#FF1978E5" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="FontFamily" Value="Inter" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Style.Triggers>
+        <MultiDataTrigger>
+          <MultiDataTrigger.Conditions>
+            <Condition Binding="{Binding IsInstalled}" Value="True" />
+            <Condition Binding="{Binding IsEnabled}" Value="True" />
+          </MultiDataTrigger.Conditions>
+          <Setter Property="Foreground" Value="#FF4ADE80" />
+        </MultiDataTrigger>
+        <DataTrigger Binding="{Binding IsInstalled}" Value="False">
+          <Setter Property="Foreground" Value="#FF64748B" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+  </Window.Resources>
+
+  <Grid>
+    <Canvas IsHitTestVisible="False">
+      <Ellipse Width="460" Height="460" Canvas.Left="-60" Canvas.Top="-80" Fill="#1A1978E5">
+        <Ellipse.Effect>
+          <BlurEffect Radius="120" />
+        </Ellipse.Effect>
+      </Ellipse>
+      <Ellipse Width="420" Height="420" Canvas.Right="-60" Canvas.Bottom="-60" Fill="#1A6366F1">
+        <Ellipse.Effect>
+          <BlurEffect Radius="120" />
+        </Ellipse.Effect>
+      </Ellipse>
+    </Canvas>
+
+    <Border CornerRadius="12"
+            Background="{StaticResource PanelBrush}"
+            BorderBrush="{StaticResource PanelBorderBrush}"
+            BorderThickness="1">
+      <Border.Effect>
+        <DropShadowEffect BlurRadius="44" ShadowDepth="0" Opacity="0.52" Color="#FF000000" />
+      </Border.Effect>
+
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="32,20,32,20">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <Border Width="28" Height="28" CornerRadius="8" Background="#FF1978E5">
+              <TextBlock Text="&#xF190;" FontFamily="pack://application:,,,/Aiden.TrayMonitor;component/Assets/Fonts/#Material Symbols Outlined" Foreground="White" FontSize="20"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="Aiden Tray Monitor"
+                       Margin="12,0,0,0"
+                       Foreground="White"
+                       FontFamily="Inter"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+          <Button Grid.Column="1"
+                  Style="{StaticResource TopCloseButtonStyle}"
+                  Content="&#xE5CD;"
+                  Click="OnCloseClick" />
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="40,0,40,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+
+          <StackPanel Grid.Row="0" Margin="0,0,0,26">
+            <TextBlock Text="Welcome to Aiden Monitor"
+                       Foreground="White"
+                       FontFamily="Inter"
+                       FontSize="30"
+                       FontWeight="Bold" />
+            <TextBlock Text="We detected your local AI CLI tools. Enable telemetry to start monitoring performance and token usage in real-time."
+                       Foreground="{StaticResource TextMutedBrush}"
+                       FontFamily="Inter"
+                       FontSize="18"
+                       Margin="0,12,0,0"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Items}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Padding="20" Margin="0,0,0,16" CornerRadius="12" BorderThickness="1">
+                    <Border.Style>
+                      <Style TargetType="Border">
+                        <Setter Property="Background" Value="{StaticResource CardBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding IsInstalled}" Value="False">
+                            <Setter Property="Background" Value="#33000000" />
+                            <Setter Property="BorderBrush" Value="#14FFFFFF" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Border.Style>
+
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+
+                      <Border Width="48" Height="48" CornerRadius="12" BorderThickness="1" VerticalAlignment="Top">
+                        <Border.Style>
+                          <Style TargetType="Border">
+                            <Setter Property="Background" Value="#1A1978E5" />
+                            <Setter Property="BorderBrush" Value="#331978E5" />
+                            <Style.Triggers>
+                              <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                  <Condition Binding="{Binding IsInstalled}" Value="True" />
+                                  <Condition Binding="{Binding IsEnabled}" Value="True" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Background" Value="#1A22C55E" />
+                                <Setter Property="BorderBrush" Value="#3322C55E" />
+                              </MultiDataTrigger>
+                              <DataTrigger Binding="{Binding IsInstalled}" Value="False">
+                                <Setter Property="Background" Value="#0DFFFFFF" />
+                                <Setter Property="BorderBrush" Value="#14FFFFFF" />
+                              </DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding StateIconGlyph}"
+                                   FontFamily="pack://application:,,,/Aiden.TrayMonitor;component/Assets/Fonts/#Material Symbols Outlined"
+                                   FontSize="22"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center">
+                          <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                              <Setter Property="Foreground" Value="#FF1978E5" />
+                              <Style.Triggers>
+                                <MultiDataTrigger>
+                                  <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsInstalled}" Value="True" />
+                                    <Condition Binding="{Binding IsEnabled}" Value="True" />
+                                  </MultiDataTrigger.Conditions>
+                                  <Setter Property="Foreground" Value="#FF4ADE80" />
+                                </MultiDataTrigger>
+                                <DataTrigger Binding="{Binding IsInstalled}" Value="False">
+                                  <Setter Property="Foreground" Value="#FF64748B" />
+                                </DataTrigger>
+                              </Style.Triggers>
+                            </Style>
+                          </TextBlock.Style>
+                        </TextBlock>
+                      </Border>
+
+                      <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                          <TextBlock Text="{Binding DisplayName}"
+                                     Foreground="White"
+                                     FontFamily="Inter"
+                                     FontSize="18"
+                                     FontWeight="SemiBold"
+                                     VerticalAlignment="Center" />
+                          <Border Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource StateBadgeBorderStyle}">
+                            <TextBlock Text="{Binding StateLabel}" Style="{StaticResource StateBadgeTextStyle}" />
+                          </Border>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding Description}"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   FontFamily="Inter"
+                                   FontSize="14"
+                                   TextWrapping="Wrap" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0" Visibility="{Binding InstallCommandVisibility}">
+                          <Border Background="#66000000" BorderBrush="#14FFFFFF" BorderThickness="1" CornerRadius="8" Padding="8,6">
+                            <TextBlock Text="{Binding InstallHint}"
+                                       Width="370"
+                                       Foreground="#FFC9D1D9"
+                                       FontFamily="Consolas"
+                                       FontSize="11"
+                                       TextTrimming="CharacterEllipsis" />
+                          </Border>
+                          <Button Margin="8,0,0,0"
+                                  Width="34"
+                                  Height="34"
+                                  Style="{StaticResource TopCloseButtonStyle}"
+                                  Content="&#xE14D;"
+                                  Click="OnCopyInstallCommandClick" />
+                        </StackPanel>
+                        <TextBlock Text="Copied to clipboard"
+                                   Margin="0,6,0,0"
+                                   Foreground="#FF4ADE80"
+                                   FontFamily="Inter"
+                                   FontSize="11"
+                                   Visibility="{Binding CopyFeedbackVisibility}" />
+                      </StackPanel>
+
+                      <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="14,0,0,0">
+                        <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  IsEnabled="{Binding IsInstalled}"
+                                  Style="{StaticResource OnboardingSwitchStyle}"
+                                  Click="OnToggleClick" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+
+        <Border Grid.Row="2" Background="#05000000" Padding="40,24,40,24" BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{Binding NoticeText}"
+                       VerticalAlignment="Center"
+                       Foreground="#FFFCA5A5"
+                       FontFamily="Inter"
+                       FontSize="12" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+              <Button Content="Exit" Style="{StaticResource ExitButtonStyle}" Click="OnCloseClick" />
+              <Button Content="Continue"
+                      Style="{StaticResource ContinueButtonStyle}"
+                      IsEnabled="{Binding CanContinue}"
+                      Margin="12,0,0,0"
+                      Click="OnContinueClick" />
+            </StackPanel>
+          </Grid>
+        </Border>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

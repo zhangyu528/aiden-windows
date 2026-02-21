@@ -8,8 +8,10 @@ public sealed class WindowPositionService
     {
         const double margin = 12;
         var workArea = SystemParameters.WorkArea;
+        var width = window.ActualWidth > 0 ? window.ActualWidth : window.Width;
+        var height = window.ActualHeight > 0 ? window.ActualHeight : window.Height;
 
-        window.Left = workArea.Right - window.Width - margin;
-        window.Top = workArea.Bottom - window.Height - margin;
+        window.Left = workArea.Right - width - margin;
+        window.Top = workArea.Bottom - height - margin;
     }
 }

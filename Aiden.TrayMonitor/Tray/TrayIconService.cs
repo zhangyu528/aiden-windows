@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows;
+using System.Windows.Threading;
 using Aiden.TrayMonitor.Infrastructure;
 using Aiden.TrayMonitor.Views;
 using WinForms = System.Windows.Forms;
@@ -29,7 +30,7 @@ public sealed class TrayIconService : IDisposable
         _cliProvisioningDialogService = cliProvisioningDialogService;
     }
 
-    public void Initialize()
+    public void Initialize(bool showPanelOnStartup = false)
     {
         if (_notifyIcon is not null)
         {
@@ -60,6 +61,11 @@ public sealed class TrayIconService : IDisposable
                 TogglePanel();
             }
         };
+
+        if (showPanelOnStartup)
+        {
+            ShowPanel();
+        }
     }
 
     public void Dispose()
@@ -82,8 +88,23 @@ public sealed class TrayIconService : IDisposable
             return;
         }
 
-        _windowPositionService.PlaceNearTaskbar(_panelWindow);
-        _panelWindow.Show();
+        ShowPanel();
+    }
+
+    private void ShowPanel()
+    {
+        if (!_panelWindow.IsVisible)
+        {
+            _panelWindow.Show();
+        }
+
+        // Ensure SizeToContent windows have valid ActualWidth/ActualHeight before placement.
+        _panelWindow.Dispatcher.Invoke(() =>
+        {
+            _panelWindow.UpdateLayout();
+            _windowPositionService.PlaceNearTaskbar(_panelWindow);
+        }, DispatcherPriority.Loaded);
+
         _panelWindow.Activate();
     }
 
