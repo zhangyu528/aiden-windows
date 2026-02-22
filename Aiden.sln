@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aiden.RuntimeAgent", "Aiden.RuntimeAgent\Aiden.RuntimeAgent.csproj", "{D4BDBBFE-F4FE-4E8A-8BA5-F6F5917D8A4C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aiden.TrayMonitor", "Aiden.TrayMonitor\Aiden.TrayMonitor.csproj", "{7F2606E1-0FAB-4ADF-ABE6-617908427ACD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D4BDBBFE-F4FE-4E8A-8BA5-F6F5917D8A4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4BDBBFE-F4FE-4E8A-8BA5-F6F5917D8A4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4BDBBFE-F4FE-4E8A-8BA5-F6F5917D8A4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4BDBBFE-F4FE-4E8A-8BA5-F6F5917D8A4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F2606E1-0FAB-4ADF-ABE6-617908427ACD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F2606E1-0FAB-4ADF-ABE6-617908427ACD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F2606E1-0FAB-4ADF-ABE6-617908427ACD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F2606E1-0FAB-4ADF-ABE6-617908427ACD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
