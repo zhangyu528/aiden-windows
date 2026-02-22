@@ -240,14 +240,14 @@ public sealed class VmClient
     private string BuildLatestUserQuery()
     {
         var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
-        return $"topk(1, max by (user.email) (timestamp(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email!=\"\"}})))";
+        return $"max by (user.email) (timestamp(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email!=\"\",session.id!=\"\"}}))";
     }
 
     private string BuildLatestUserFallbackQuery(int fallbackDays)
     {
         var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
         var days = Math.Max(1, fallbackDays);
-        return $"topk(1, max by (user.email) (timestamp(last_over_time(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email!=\"\"}}[{days}d]))))";
+        return $"max by (user.email) (timestamp(last_over_time(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email!=\"\",session.id!=\"\"}}[{days}d])))";
     }
 
     private static LatestUserInfo ExtractLatestUserInfoOrUnknown(JsonElement result)
@@ -257,24 +257,50 @@ public sealed class VmClient
             return new LatestUserInfo("Unknown", null);
         }
 
-        var first = result[0];
-        if (!first.TryGetProperty("metric", out var metric))
+        string? selectedEmail = null;
+        DateTimeOffset? selectedActiveAt = null;
+        double selectedTs = double.MinValue;
+        foreach (var item in result.EnumerateArray())
         {
-            return new LatestUserInfo("Unknown", null);
+            if (!item.TryGetProperty("metric", out var metric))
+            {
+                continue;
+            }
+
+            if (!metric.TryGetProperty("user.email", out var emailElement))
+            {
+                continue;
+            }
+
+            var email = emailElement.GetString();
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                continue;
+            }
+
+            if (!TryParseVectorValue(item, out var ts))
+            {
+                continue;
+            }
+
+            var shouldSelect = ts > selectedTs
+                || (Math.Abs(ts - selectedTs) < 0.0001d
+                    && selectedEmail is not null
+                    && string.CompareOrdinal(email, selectedEmail) > 0);
+
+            if (!shouldSelect && selectedEmail is not null)
+            {
+                continue;
+            }
+
+            selectedTs = ts;
+            selectedEmail = email;
+            selectedActiveAt = ExtractTimestampOrNull(item);
         }
 
-        if (!metric.TryGetProperty("user.email", out var emailElement))
-        {
-            return new LatestUserInfo("Unknown", null);
-        }
-
-        var email = emailElement.GetString();
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            return new LatestUserInfo("Unknown", null);
-        }
-
-        return new LatestUserInfo(email, ExtractTimestampOrNull(first));
+        return string.IsNullOrWhiteSpace(selectedEmail)
+            ? new LatestUserInfo("Unknown", null)
+            : new LatestUserInfo(selectedEmail, selectedActiveAt);
     }
 
     private static DateTimeOffset? ExtractTimestampOrNull(JsonElement item)
@@ -349,17 +375,30 @@ public sealed class VmClient
             return (0, "N/A", 0);
         }
 
-        var instant = await QueryScalarOrEmptyAsync(BuildSessionContextUsageQuery(userEmail, sessionId), cancellationToken);
-        var usedTokens = instant.HasValue ? instant.Value : 0;
-        if (!instant.HasValue)
+        var instantInput = await QueryScalarOrEmptyAsync(BuildSessionContextUsageQuery(userEmail, sessionId, model), cancellationToken);
+        var instantCached = await QueryScalarOrEmptyAsync(BuildSessionContextCachedQuery(userEmail, sessionId, model), cancellationToken);
+        var usedTokens = 0d;
+        if (instantInput.HasValue)
         {
-            var fallback = await QueryScalarOrEmptyAsync(BuildSessionContextUsageFallbackQuery(userEmail, sessionId, fallbackDays), cancellationToken);
-            if (!fallback.HasValue)
+            var cached = instantCached.HasValue ? instantCached.Value : 0d;
+            usedTokens = Math.Max(0d, instantInput.Value - cached);
+        }
+        else
+        {
+            var fallbackInput = await QueryScalarOrEmptyAsync(BuildSessionContextUsageFallbackQuery(userEmail, sessionId, model, fallbackDays), cancellationToken);
+            var fallbackCached = await QueryScalarOrEmptyAsync(BuildSessionContextCachedFallbackQuery(userEmail, sessionId, model, fallbackDays), cancellationToken);
+            if (!fallbackInput.HasValue)
             {
                 return (0, "N/A", 0);
             }
 
-            usedTokens = fallback.Value;
+            var cached = fallbackCached.HasValue ? fallbackCached.Value : 0d;
+            usedTokens = Math.Max(0d, fallbackInput.Value - cached);
+        }
+
+        if (usedTokens < 0)
+        {
+            usedTokens = 0;
         }
 
         var percent = (usedTokens / windowTokens) * 100d;
@@ -402,21 +441,42 @@ public sealed class VmClient
         return $"max by (session.id) (timestamp(last_over_time(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id!=\"\"}}[{days}d])))";
     }
 
-    private string BuildSessionContextUsageQuery(string userEmail, string sessionId)
+    private string BuildSessionContextUsageQuery(string userEmail, string sessionId, string model)
     {
         var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
         var escapedUser = EscapePromQlLabelValue(userEmail);
         var escapedSession = EscapePromQlLabelValue(sessionId);
-        return $"sum(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.token.type=\"input\"}})";
+        var escapedModel = EscapePromQlLabelValue(model);
+        return $"sum(idelta(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.request.model=\"{escapedModel}\",gen_ai.token.type=\"input\"}}[1d]))";
     }
 
-    private string BuildSessionContextUsageFallbackQuery(string userEmail, string sessionId, int fallbackDays)
+    private string BuildSessionContextUsageFallbackQuery(string userEmail, string sessionId, string model, int fallbackDays)
     {
         var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
         var escapedUser = EscapePromQlLabelValue(userEmail);
         var escapedSession = EscapePromQlLabelValue(sessionId);
+        var escapedModel = EscapePromQlLabelValue(model);
         var days = Math.Max(1, fallbackDays);
-        return $"sum(last_over_time(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.token.type=\"input\"}}[{days}d]))";
+        return $"sum(idelta(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.request.model=\"{escapedModel}\",gen_ai.token.type=\"input\"}}[{days}d]))";
+    }
+
+    private string BuildSessionContextCachedQuery(string userEmail, string sessionId, string model)
+    {
+        var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
+        var escapedUser = EscapePromQlLabelValue(userEmail);
+        var escapedSession = EscapePromQlLabelValue(sessionId);
+        var escapedModel = EscapePromQlLabelValue(model);
+        return $"sum(idelta(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.request.model=\"{escapedModel}\",gen_ai.token.type=\"cached\"}}[1d]))";
+    }
+
+    private string BuildSessionContextCachedFallbackQuery(string userEmail, string sessionId, string model, int fallbackDays)
+    {
+        var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
+        var escapedUser = EscapePromQlLabelValue(userEmail);
+        var escapedSession = EscapePromQlLabelValue(sessionId);
+        var escapedModel = EscapePromQlLabelValue(model);
+        var days = Math.Max(1, fallbackDays);
+        return $"sum(idelta(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.request.model=\"{escapedModel}\",gen_ai.token.type=\"cached\"}}[{days}d]))";
     }
 
     private async Task<string?> QueryLatestModelForSessionAsync(string userEmail, string sessionId, int fallbackDays, CancellationToken cancellationToken)
@@ -445,7 +505,7 @@ public sealed class VmClient
         var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
         var escapedUser = EscapePromQlLabelValue(userEmail);
         var escapedSession = EscapePromQlLabelValue(sessionId);
-        return $"topk(1, max by (gen_ai.request.model) (timestamp(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.request.model!=\"\"}})))";
+        return $"max by (gen_ai.request.model) (timestamp(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.request.model!=\"\"}}))";
     }
 
     private string BuildLatestModelForSessionFallbackQuery(string userEmail, string sessionId, int fallbackDays)
@@ -454,7 +514,7 @@ public sealed class VmClient
         var escapedUser = EscapePromQlLabelValue(userEmail);
         var escapedSession = EscapePromQlLabelValue(sessionId);
         var days = Math.Max(1, fallbackDays);
-        return $"topk(1, max by (gen_ai.request.model) (timestamp(last_over_time(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.request.model!=\"\"}}[{days}d]))))";
+        return $"max by (gen_ai.request.model) (timestamp(last_over_time(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.request.model!=\"\"}}[{days}d])))";
     }
 
     private int ResolveLookbackDays(DateTimeOffset? activeAt)
@@ -536,18 +596,46 @@ public sealed class VmClient
             return null;
         }
 
-        if (!result[0].TryGetProperty("metric", out var metric))
+        string? selectedModel = null;
+        double selectedTs = double.MinValue;
+        foreach (var item in result.EnumerateArray())
         {
-            return null;
+            if (!item.TryGetProperty("metric", out var metric))
+            {
+                continue;
+            }
+
+            if (!metric.TryGetProperty("gen_ai.request.model", out var modelElement))
+            {
+                continue;
+            }
+
+            var model = modelElement.GetString();
+            if (string.IsNullOrWhiteSpace(model))
+            {
+                continue;
+            }
+
+            if (!TryParseVectorValue(item, out var ts))
+            {
+                continue;
+            }
+
+            var shouldSelect = ts > selectedTs
+                || (Math.Abs(ts - selectedTs) < 0.0001d
+                    && selectedModel is not null
+                    && string.CompareOrdinal(model, selectedModel) > 0);
+
+            if (!shouldSelect && selectedModel is not null)
+            {
+                continue;
+            }
+
+            selectedTs = ts;
+            selectedModel = model;
         }
 
-        if (!metric.TryGetProperty("gen_ai.request.model", out var modelElement))
-        {
-            return null;
-        }
-
-        var model = modelElement.GetString();
-        return string.IsNullOrWhiteSpace(model) ? null : model;
+        return selectedModel;
     }
 
     private string GetServiceNameFilter()

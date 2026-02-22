@@ -149,6 +149,9 @@ public sealed class CollectorProcessService
               - key: output_token_count
                 action: convert
                 converted_type: int
+              - key: cached_token_count
+                action: convert
+                converted_type: int
           transform/codex_resource_dims:
             error_mode: ignore
             log_statements:
@@ -177,6 +180,13 @@ public sealed class CollectorProcessService
                 attributes:
                   - key: gen_ai.token.type
                     default_value: output
+          sum/codex_cached:
+            logs:
+              gen_ai.client.token.usage_sum:
+                source_attribute: cached_token_count
+                attributes:
+                  - key: gen_ai.token.type
+                    default_value: cached
         exporters:
           otlphttp/vm:
             endpoint: {vmMetricsEndpoint}
@@ -205,6 +215,10 @@ public sealed class CollectorProcessService
               receivers: [sum/codex_output]
               processors: [deltatocumulative, metricstarttime, batch]
               exporters: [otlphttp/vm]
+            metrics/codex_cached:
+              receivers: [sum/codex_cached]
+              processors: [deltatocumulative, metricstarttime, batch]
+              exporters: [otlphttp/vm]
             logs:
               receivers: [otlp]
               processors: [batch]
@@ -212,7 +226,7 @@ public sealed class CollectorProcessService
             logs/codex_token_convert:
               receivers: [otlp]
               processors: [filter/codex_completed, attributes/codex_enrich, transform/codex_resource_dims, batch]
-              exporters: [sum/codex_input, sum/codex_output]
+              exporters: [sum/codex_input, sum/codex_output, sum/codex_cached]
             traces:
               receivers: [otlp]
               processors: [batch]
