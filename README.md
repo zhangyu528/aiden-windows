@@ -55,7 +55,7 @@ Configuration layout:
 Runtime binaries are intentionally excluded from version control.
 
 - Local install path: `Aiden.RuntimeAgent/runtime/vm/<version>/victoria-metrics.exe`
-- Collector install path: `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol.exe`
+- Collector install path: `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol-contrib.exe`
 - Ignore rules are defined in `.gitignore` (`runtime/`, archives, etc.)
 
 Download and install `victoria-metrics.exe` with hash verification:
@@ -74,10 +74,18 @@ Download OTel Collector binary to project runtime path:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-collector.ps1 `
   -Version "v0.146.1" `
-  -DownloadUrl "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol_0.146.1_windows_amd64.tar.gz" `
+  -DownloadUrl "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol-contrib_0.146.1_windows_amd64.tar.gz" `
   -Sha256 "0eaa1ff9d0f5d8009921667368981617641cebb1766fc7b38be95d5dc21a126a"
 ```
 
 Notes:
-- Default artifact is core collector (`otelcol_...`) rather than contrib.
+- Default artifact is contrib collector (`otelcol-contrib_...`).
 - `-DownloadUrl` and `-Sha256` are optional; script can auto-resolve SHA256 from release `checksums.txt`.
+
+## Codex Conversion Notes
+
+- Codex telemetry is converted from logs (`response.completed`) to
+  `gen_ai.client.token.usage_sum` in collector.
+- Converted Codex metrics are exported as cumulative series using
+  `deltatocumulative` + `metricstarttime` processors.
+- Query visibility in VictoriaMetrics may lag by about 20-30 seconds after ingest.

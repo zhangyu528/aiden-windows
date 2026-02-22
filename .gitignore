@@ -27,6 +27,5 @@ Desktop.ini
 
 # Runtime binaries (do not commit)
 runtime/
-Aiden.TrayMonitor/runtime/
 *.zip
 *.tar.gz

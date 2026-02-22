@@ -96,18 +96,27 @@ public sealed class CollectorProcessService
         var collectorDir = Path.GetDirectoryName(exePath)!;
         var configDir = Path.Combine(collectorDir, "config");
         Directory.CreateDirectory(configDir);
+        var fileExportPath = ResolveFileLogExportPath(collectorDir);
+        var fileExportDirectory = Path.GetDirectoryName(fileExportPath);
+        if (!string.IsNullOrWhiteSpace(fileExportDirectory))
+        {
+            Directory.CreateDirectory(fileExportDirectory);
+        }
 
         var configPath = Path.Combine(configDir, "otelcol-vm.yaml");
         var vmMetricsEndpoint = ResolveUrl(_vmOptions.BaseUrl, _vmOptions.OtlpEndpoint, "/opentelemetry", _vmOptions.Port);
         var collectorListenHost = FormatListenHost(ExtractHost(_options.BaseUrl));
-        var yaml = BuildLegacyConfig(collectorListenHost, vmMetricsEndpoint);
+        var yaml = BuildLegacyConfig(collectorListenHost, vmMetricsEndpoint, fileExportPath);
 
         File.WriteAllText(configPath, yaml);
         return configPath;
     }
 
-    private string BuildLegacyConfig(string collectorListenHost, string vmMetricsEndpoint)
+    private string BuildLegacyConfig(string collectorListenHost, string vmMetricsEndpoint, string fileLogExportPath)
     {
+        var fileLogExportFormat = ResolveFileLogExportFormat();
+        var logsExporters = BuildLogsExportersList();
+
         return $"""
         receivers:
           otlp:
@@ -118,13 +127,64 @@ public sealed class CollectorProcessService
                 endpoint: {collectorListenHost}:{_options.HttpPort}
 
         processors:
+          filter/codex_completed:
+            error_mode: ignore
+            logs:
+              log_record:
+                - log.attributes["event.kind"] != "response.completed" or log.attributes["input_token_count"] == nil or log.attributes["output_token_count"] == nil
+          attributes/codex_enrich:
+            actions:
+              - key: gen_ai.request.model
+                from_attribute: slug
+                action: upsert
+              - key: gen_ai.request.model
+                from_attribute: model
+                action: upsert
+              - key: session.id
+                from_attribute: conversation.id
+                action: upsert
+              - key: input_token_count
+                action: convert
+                converted_type: int
+              - key: output_token_count
+                action: convert
+                converted_type: int
+          transform/codex_resource_dims:
+            error_mode: ignore
+            log_statements:
+              - context: log
+                statements:
+                  - set(resource.attributes["service.name"], "codex-cli")
+                  - set(resource.attributes["user.email"], log.attributes["user.email"]) where log.attributes["user.email"] != nil
+                  - set(resource.attributes["session.id"], log.attributes["session.id"]) where log.attributes["session.id"] != nil
+                  - set(resource.attributes["gen_ai.request.model"], log.attributes["gen_ai.request.model"]) where log.attributes["gen_ai.request.model"] != nil
+          deltatocumulative:
+          metricstarttime:
           batch:
 
+        connectors:
+          sum/codex_input:
+            logs:
+              gen_ai.client.token.usage_sum:
+                source_attribute: input_token_count
+                attributes:
+                  - key: gen_ai.token.type
+                    default_value: input
+          sum/codex_output:
+            logs:
+              gen_ai.client.token.usage_sum:
+                source_attribute: output_token_count
+                attributes:
+                  - key: gen_ai.token.type
+                    default_value: output
         exporters:
           otlphttp/vm:
             endpoint: {vmMetricsEndpoint}
           debug:
             verbosity: basic
+          file/otlp_logs:
+            path: '{EscapeYamlSingleQuoted(fileLogExportPath)}'
+            format: {fileLogExportFormat}
 
         extensions:
           health_check:
@@ -137,10 +197,22 @@ public sealed class CollectorProcessService
               receivers: [otlp]
               processors: [batch]
               exporters: [otlphttp/vm]
+            metrics/codex_input:
+              receivers: [sum/codex_input]
+              processors: [deltatocumulative, metricstarttime, batch]
+              exporters: [otlphttp/vm]
+            metrics/codex_output:
+              receivers: [sum/codex_output]
+              processors: [deltatocumulative, metricstarttime, batch]
+              exporters: [otlphttp/vm]
             logs:
               receivers: [otlp]
               processors: [batch]
-              exporters: [debug]
+              exporters: [{logsExporters}]
+            logs/codex_token_convert:
+              receivers: [otlp]
+              processors: [filter/codex_completed, attributes/codex_enrich, transform/codex_resource_dims, batch]
+              exporters: [sum/codex_input, sum/codex_output]
             traces:
               receivers: [otlp]
               processors: [batch]
@@ -488,9 +560,9 @@ public sealed class CollectorProcessService
                         continue;
                     }
 
-                    var selected = Directory.GetFiles(candidate, "otelcol*.exe", SearchOption.AllDirectories)
+                    var selected = Directory.GetFiles(candidate, "otelcol-contrib*.exe", SearchOption.AllDirectories)
                         .Select(path => new FileInfo(path))
-                        .Where(f => f.Name.Equals("otelcol.exe", StringComparison.OrdinalIgnoreCase))
+                        .Where(f => f.Name.Equals("otelcol-contrib.exe", StringComparison.OrdinalIgnoreCase))
                         .OrderByDescending(f => f.LastWriteTimeUtc)
                         .FirstOrDefault();
                     if (selected is not null)
@@ -502,5 +574,43 @@ public sealed class CollectorProcessService
         }
 
         return null;
+    }
+
+    private string ResolveFileLogExportPath(string collectorDir)
+    {
+        if (!string.IsNullOrWhiteSpace(_options.FileLogExportPath))
+        {
+            return _options.FileLogExportPath.Trim();
+        }
+
+        return Path.Combine(collectorDir, "logs", "otlp-logs.jsonl");
+    }
+
+    private string ResolveFileLogExportFormat()
+    {
+        var configured = _options.FileLogExportFormat?.Trim();
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            return "json";
+        }
+
+        return string.Equals(configured, "proto", StringComparison.OrdinalIgnoreCase)
+            ? "proto"
+            : "json";
+    }
+
+    private string BuildLogsExportersList()
+    {
+        if (!_options.EnableFileLogExport)
+        {
+            return "debug";
+        }
+
+        return "debug, file/otlp_logs";
+    }
+
+    private static string EscapeYamlSingleQuoted(string value)
+    {
+        return value.Replace("'", "''", StringComparison.Ordinal);
     }
 }

@@ -6,4 +6,7 @@ public sealed class CollectorOptions
     public int GrpcPort { get; set; } = 4317;
     public int HttpPort { get; set; } = 4318;
     public int HealthPort { get; set; } = 13133;
+    public bool EnableFileLogExport { get; set; } = true;
+    public string FileLogExportPath { get; set; } = string.Empty;
+    public string FileLogExportFormat { get; set; } = "json";
 }

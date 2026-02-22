@@ -28,21 +28,23 @@ Download and install OTel Collector binary to project runtime path (not tracked 
 
 Default install location:
 
-- `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol.exe`
+- `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol-contrib.exe`
 
 Usage:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-collector.ps1 `
   -Version "v0.146.1" `
-  -DownloadUrl "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol_0.146.1_windows_amd64.tar.gz" `
+  -DownloadUrl "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol-contrib_0.146.1_windows_amd64.tar.gz" `
   -Sha256 "0eaa1ff9d0f5d8009921667368981617641cebb1766fc7b38be95d5dc21a126a"
 ```
 
 Notes:
 
 - `-DownloadUrl` and `-Sha256` are optional.
-- Default artifact is core collector (`otelcol_...`) instead of contrib.
+- Default artifact is contrib collector (`otelcol-contrib_...`).
+- Script requires `otelcol-contrib.exe`; core collector is not accepted.
+- `-VerifyComponents` defaults to `true` and verifies required components.
 - When `-Sha256` is omitted, script tries to resolve hash from release `checksums.txt`.
 
 ## upgrade-stop-install-start.ps1
@@ -67,3 +69,18 @@ Usage:
 powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\uninstall-clean-agent.ps1 `
   -InstallPath "C:\Users\<you>\AppData\Local\Aiden"
 ```
+
+## inspect-otlp-log-fields.ps1
+
+Inspect recent OTel file-exported log records and summarize field coverage, including token-related candidates.
+
+Usage:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\inspect-otlp-log-fields.ps1 `
+  -Tail 300
+```
+
+Optional:
+
+- `-LogPath` to target a specific `otlp-logs.jsonl`.

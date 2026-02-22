@@ -49,8 +49,8 @@ public sealed class VmClient
             {
                 InputTokens = inputTask.Result,
                 OutputTokens = outputTask.Result,
-                InputText = IsCodexServiceSelected() ? "N/A" : (isKnownUser ? FormatCompactTokenValue(inputTask.Result) : "N/A"),
-                OutputText = IsCodexServiceSelected() ? "N/A" : (isKnownUser ? FormatCompactTokenValue(outputTask.Result) : "N/A"),
+                InputText = isKnownUser ? FormatCompactTokenValue(inputTask.Result) : "N/A",
+                OutputText = isKnownUser ? FormatCompactTokenValue(outputTask.Result) : "N/A",
                 CurrentUserEmail = latestUser.Email,
                 UserActiveAtText = userActiveAtText,
                 SessionCostUsd = costTask.Result,
@@ -79,11 +79,6 @@ public sealed class VmClient
 
     private async Task<double> QueryTokenWithFallbackAsync(string tokenType, int fallbackDays, CancellationToken cancellationToken)
     {
-        if (IsCodexServiceSelected())
-        {
-            return 0;
-        }
-
         var instant = await QueryScalarOrEmptyAsync(BuildTokenQuery(tokenType), cancellationToken);
         if (instant.HasValue)
         {
@@ -126,11 +121,6 @@ public sealed class VmClient
 
     private async Task<double> QueryCostWithFallbackAsync(int fallbackDays, CancellationToken cancellationToken)
     {
-        if (IsCodexServiceSelected())
-        {
-            return 0;
-        }
-
         var instantResult = await QueryResultAsync(BuildModelTokenQuery(), cancellationToken);
         if (instantResult.ValueKind == JsonValueKind.Array && instantResult.GetArrayLength() > 0)
         {
@@ -228,11 +218,6 @@ public sealed class VmClient
 
     private async Task<LatestUserInfo> QueryLatestUserAsync(CancellationToken cancellationToken)
     {
-        if (IsCodexServiceSelected())
-        {
-            return await QueryLatestCodexUserAsync(cancellationToken);
-        }
-
         var result = await QueryResultAsync(BuildLatestUserQuery(), cancellationToken);
         if (result.ValueKind == JsonValueKind.Array && result.GetArrayLength() > 0)
         {
@@ -342,11 +327,6 @@ public sealed class VmClient
 
     private async Task<(double ContextWindowM, string ContextText, double ContextPercent)> QueryContextForUserAsync(string userEmail, int fallbackDays, CancellationToken cancellationToken)
     {
-        if (IsCodexServiceSelected())
-        {
-            return (0, "N/A", 0);
-        }
-
         if (string.Equals(userEmail, "Unknown", StringComparison.OrdinalIgnoreCase))
         {
             return (0, "N/A", 0);
@@ -427,7 +407,7 @@ public sealed class VmClient
         var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
         var escapedUser = EscapePromQlLabelValue(userEmail);
         var escapedSession = EscapePromQlLabelValue(sessionId);
-        return $"sum(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\"}})";
+        return $"sum(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.token.type=\"input\"}})";
     }
 
     private string BuildSessionContextUsageFallbackQuery(string userEmail, string sessionId, int fallbackDays)
@@ -436,7 +416,7 @@ public sealed class VmClient
         var escapedUser = EscapePromQlLabelValue(userEmail);
         var escapedSession = EscapePromQlLabelValue(sessionId);
         var days = Math.Max(1, fallbackDays);
-        return $"sum(last_over_time(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\"}}[{days}d]))";
+        return $"sum(last_over_time(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\",session.id=\"{escapedSession}\",gen_ai.token.type=\"input\"}}[{days}d]))";
     }
 
     private async Task<string?> QueryLatestModelForSessionAsync(string userEmail, string sessionId, int fallbackDays, CancellationToken cancellationToken)
@@ -583,46 +563,6 @@ public sealed class VmClient
         return string.IsNullOrWhiteSpace(_options.ServiceNameFilter)
             ? "gemini-cli"
             : _options.ServiceNameFilter.Trim();
-    }
-
-    private bool IsCodexServiceSelected()
-    {
-        var serviceName = GetServiceNameFilter();
-        return string.Equals(serviceName, "codex-cli", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private async Task<LatestUserInfo> QueryLatestCodexUserAsync(CancellationToken cancellationToken)
-    {
-        var result = await QueryResultAsync(BuildCodexLatestUserQuery(), cancellationToken);
-        if (result.ValueKind == JsonValueKind.Array && result.GetArrayLength() > 0)
-        {
-            var instantUser = ExtractLatestUserInfoOrUnknown(result);
-            if (!string.Equals(instantUser.Email, "Unknown", StringComparison.OrdinalIgnoreCase))
-            {
-                return instantUser;
-            }
-        }
-
-        result = await QueryResultAsync(BuildCodexLatestUserFallbackQuery(ResolveMaxHistoryDays()), cancellationToken);
-        if (result.ValueKind == JsonValueKind.Array && result.GetArrayLength() > 0)
-        {
-            return ExtractLatestUserInfoOrUnknown(result);
-        }
-
-        return new LatestUserInfo("Unknown", null);
-    }
-
-    private string BuildCodexLatestUserQuery()
-    {
-        var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
-        return $"topk(1, max by (user.email) (timestamp(codex_log_records_total{{service.name=\"{escapedServiceName}\",user.email!=\"\"}})))";
-    }
-
-    private string BuildCodexLatestUserFallbackQuery(int fallbackDays)
-    {
-        var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
-        var days = Math.Max(1, fallbackDays);
-        return $"topk(1, max by (user.email) (timestamp(last_over_time(codex_log_records_total{{service.name=\"{escapedServiceName}\",user.email!=\"\"}}[{days}d]))))";
     }
 
     private static string EscapePromQlLabelValue(string value)

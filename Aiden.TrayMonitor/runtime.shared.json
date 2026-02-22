@@ -11,7 +11,10 @@
     "BaseUrl": "http://127.0.0.1",
     "GrpcPort": 4317,
     "HttpPort": 4318,
-    "HealthPort": 13133
+    "HealthPort": 13133,
+    "EnableFileLogExport": true,
+    "FileLogExportPath": "",
+    "FileLogExportFormat": "json"
   },
   "Agent": {
     "Enabled": true,

@@ -18,7 +18,7 @@ dotnet run
 - Show latest reported user email (`user.email`, fallback `Unknown`)
 - Show user active age in days since latest sample (fallback `N/A`)
 - Auto-start VictoriaMetrics from `Aiden.RuntimeAgent/runtime/vm/<version>/victoria-metrics.exe` if not already running
-- Auto-start OTel Collector from `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol.exe` if available
+- Auto-start OTel Collector from `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol-contrib.exe` if available
 - Poll VictoriaMetrics every 5 seconds
 - Manual refresh support
 
@@ -27,7 +27,7 @@ dotnet run
 Place binaries under:
 
 - `Aiden.RuntimeAgent/runtime/vm/<version>/victoria-metrics.exe`
-- `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol.exe`
+- `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol-contrib.exe`
 
 The app will generate collector config at runtime:
 
@@ -86,6 +86,16 @@ Token query filter:
   - when latest user is unknown: use `Vm.MaxHistoryDays`.
 - When current user is `Unknown`, Input/Output display as `N/A`.
 
+Codex log-to-metrics conversion:
+- For `service.name=codex_cli_rs`, collector converts `response.completed` logs to
+  `gen_ai.client.token.usage_sum`.
+- Converted series use:
+  - data point attribute: `gen_ai.token.type` (`input` / `output`)
+  - resource attributes: `service.name=codex-cli`, `user.email`, `session.id`, `gen_ai.request.model`
+- Codex metrics pipeline includes `deltatocumulative` + `metricstarttime` before export to VM.
+  This is required so converted sum metrics are queryable reliably in VictoriaMetrics.
+- Expected query visibility delay is about 20-30 seconds for Codex converted metrics.
+
 Latest user rule:
 - The app resolves latest user with instant query first:
   `topk(1, max by (user.email) (timestamp(gen_ai.client.token.usage_sum{service.name="<filter>",user.email!=""})))`
@@ -102,8 +112,9 @@ Context rule:
 - If instant has no sample, it falls back to a window query with dynamic `lookbackDays`:
   `max by (session.id) (timestamp(last_over_time(gen_ai.client.token.usage_sum{service.name="<filter>",user.email="<currentUser>",session.id!=""}[<lookbackDays>d])))`
 - Stable pick rule in app: highest timestamp first; when timestamps tie, choose lexical max `session.id`.
-- Context value uses total `usage_sum` of that session (all token types), then divides by
-  model context window tokens and shows `M + %`.
+- Context value uses session `input` token usage only:
+  `sum(gen_ai.client.token.usage_sum{...,gen_ai.token.type="input"})`,
+  then divides by model context window tokens and shows `M + %`.
 - If current user is `Unknown`, context is shown as `N/A`.
 - If the active model has no configured capability, context is shown as `N/A`.
 

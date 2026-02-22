@@ -131,3 +131,12 @@
   - `docs/Aiden本地集成版-TDD.md`
 - 功能规格定义与验收口径：
   - `docs/Aiden本地集成版-FSD.md`
+
+## 8. 实现口径补充（与当前版本对齐）
+- Context 指标口径为当前活跃 session 的 `input` token（`gen_ai.token.type="input"`），
+  不使用所有 token type 的总和。
+- Codex 数据链路为日志转换：
+  `response.completed` -> `gen_ai.client.token.usage_sum`（input/output）。
+- Codex 转换后的指标在导出到 VM 前，需要经过
+  `deltatocumulative` + `metricstarttime`，以保证可稳定查询。
+- Codex 转换指标写入后到查询可见存在延迟，通常约 20-30 秒。

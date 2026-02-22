@@ -71,6 +71,11 @@
   - `sum(gen_ai.client.token.usage_sum{gen_ai.token.type="output",service.name="<filter>"})`
 - 回退：`sum(last_over_time(...[<lookbackDays>d]))`
 - `lookbackDays = min(ceil(now - activeAt) + 1, MaxHistoryDays)`；无最新用户时使用 `MaxHistoryDays`。
+- Codex（`service.name=codex-cli`）由 Collector 将 `response.completed` 日志转换为同一指标：
+  `gen_ai.client.token.usage_sum`，其中 `gen_ai.token.type` 为 `input` / `output`。
+- Codex 转换链路在 metrics pipeline 上增加 `deltatocumulative` + `metricstarttime`，
+  以保证写入 VictoriaMetrics 后可稳定查询。
+- Codex 指标写入后到查询可见可能有约 20-30 秒延迟。
 
 ### 6.2 Current User
 - 瞬时优先：
@@ -84,9 +89,10 @@
 
 ### 6.4 Context
 1. 选当前用户活跃 `session.id`（瞬时优先，回退窗口）。
-2. 取该 session 的 `usage_sum`。
+2. 取该 session 的 `input` token：
+   `sum(gen_ai.client.token.usage_sum{service.name="<filter>",user.email="<currentUser>",session.id="<session>",gen_ai.token.type="input"})`。
 3. 取该 session 最新模型 `gen_ai.request.model`。
-4. 计算占比：`usage_sum / ModelContextWindowTokens[model] * 100`。
+4. 计算占比：`input_usage_sum / ModelContextWindowTokens[model] * 100`。
 5. session 选择稳定规则：时间戳最大优先；并列取字典序最大 `session.id`。
 
 ### 6.5 Cost

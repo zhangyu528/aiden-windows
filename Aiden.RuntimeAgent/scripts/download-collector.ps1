@@ -6,7 +6,10 @@ param(
     [string]$DownloadUrl = "",
 
     [Parameter(Mandatory = $false)]
-    [string]$Sha256 = ""
+    [string]$Sha256 = "",
+
+    [Parameter(Mandatory = $false)]
+    [bool]$VerifyComponents = $true
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,8 +19,10 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($DownloadUrl)) {
-    $DownloadUrl = "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/$Version/otelcol_$($Version.TrimStart('v'))_windows_amd64.tar.gz"
+    $DownloadUrl = "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/$Version/otelcol-contrib_$($Version.TrimStart('v'))_windows_amd64.tar.gz"
 }
+
+$expectedExeName = "otelcol-contrib.exe"
 
 function Resolve-Sha256FromChecksums {
     param(
@@ -43,7 +48,7 @@ $installRoot = Join-Path $repoRoot "Aiden.RuntimeAgent\runtime\collector"
 $targetDir = Join-Path $installRoot $Version
 
 if (Test-Path $targetDir) {
-    $existing = Get-ChildItem -Recurse -Path $targetDir -Filter "otelcol*.exe" | Select-Object -First 1
+    $existing = Get-ChildItem -Recurse -Path $targetDir -Filter $expectedExeName | Select-Object -First 1
     if ($existing) {
         Write-Host "Collector already exists: $($existing.FullName)"
         exit 0
@@ -107,9 +112,24 @@ try {
 
     Copy-Item -Path (Join-Path $extractDir "*") -Destination $targetDir -Recurse -Force
 
-    $found = Get-ChildItem -Recurse -Path $targetDir -Filter "otelcol*.exe" | Select-Object -First 1
+    $found = Get-ChildItem -Recurse -Path $targetDir -Filter $expectedExeName | Select-Object -First 1
     if (-not $found) {
-        throw "No otelcol executable found after extraction."
+        throw "No $expectedExeName found after extraction. This project requires otelcol-contrib."
+    }
+
+    if ($VerifyComponents) {
+        $requiredComponents = @("count", "spanmetrics", "transform", "filter", "otlphttp")
+        $componentsOutput = & $found.FullName components 2>&1 | Out-String
+        $missing = @()
+        foreach ($component in $requiredComponents) {
+            if ($componentsOutput -notmatch ("- name:\s*" + [regex]::Escape($component))) {
+                $missing += $component
+            }
+        }
+
+        if ($missing.Count -gt 0) {
+            throw "Installed collector is missing required components: $($missing -join ', ')"
+        }
     }
 
     Write-Host "Installed: $($found.FullName)"
