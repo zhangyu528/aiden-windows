@@ -124,38 +124,6 @@ public sealed class VmProcessService
 
     private static string? FindVmExecutablePath()
     {
-        var roots = new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory };
-        foreach (var root in roots)
-        {
-            var dir = new DirectoryInfo(root);
-            for (var i = 0; i < 8 && dir is not null; i++, dir = dir.Parent)
-            {
-                var runtimeVm = Path.Combine(dir.FullName, "runtime", "vm");
-                var candidates = new[]
-                {
-                    runtimeVm,
-                    Path.Combine(dir.FullName, "Aiden.TrayMonitor", "runtime", "vm")
-                };
-
-                foreach (var candidate in candidates)
-                {
-                    if (!Directory.Exists(candidate))
-                    {
-                        continue;
-                    }
-
-                    var selected = Directory.GetFiles(candidate, "victoria-metrics.exe", SearchOption.AllDirectories)
-                        .Select(path => new FileInfo(path))
-                        .OrderByDescending(f => f.LastWriteTimeUtc)
-                        .FirstOrDefault();
-                    if (selected is not null)
-                    {
-                        return selected.FullName;
-                    }
-                }
-            }
-        }
-
-        return null;
+        return RuntimeExecutableLocator.FindLatestExecutable("vm", "victoria-metrics.exe");
     }
 }

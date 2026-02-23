@@ -20,7 +20,7 @@ $vmSpec = @{
     Version = 'v1.113.0'
     DownloadUrl = 'https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.113.0/victoria-metrics-windows-amd64-v1.113.0.zip'
     Sha256 = ''
-    Destination = 'Aiden.RuntimeAgent\runtime\vm'
+    Destination = 'runtime\vm'
     ExecutablePattern = 'victoria-metrics*.exe'
 }
 
@@ -29,7 +29,7 @@ $collectorSpec = @{
     Version = 'v0.146.1'
     DownloadUrl = 'https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol-contrib_0.146.1_windows_amd64.tar.gz'
     Sha256 = ''
-    Destination = 'Aiden.RuntimeAgent\runtime\collector'
+    Destination = 'runtime\collector'
     ExecutablePattern = 'otelcol-contrib.exe'
     ArchiveType = 'tar.gz'
 }

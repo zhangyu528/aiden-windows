@@ -554,40 +554,10 @@ public sealed class CollectorProcessService
 
     private static string? FindCollectorExecutablePath()
     {
-        var roots = new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory };
-        foreach (var root in roots)
-        {
-            var dir = new DirectoryInfo(root);
-            for (var i = 0; i < 8 && dir is not null; i++, dir = dir.Parent)
-            {
-                var runtimeCollector = Path.Combine(dir.FullName, "runtime", "collector");
-                var candidates = new[]
-                {
-                    runtimeCollector,
-                    Path.Combine(dir.FullName, "Aiden.TrayMonitor", "runtime", "collector")
-                };
-
-                foreach (var candidate in candidates)
-                {
-                    if (!Directory.Exists(candidate))
-                    {
-                        continue;
-                    }
-
-                    var selected = Directory.GetFiles(candidate, "otelcol-contrib*.exe", SearchOption.AllDirectories)
-                        .Select(path => new FileInfo(path))
-                        .Where(f => f.Name.Equals("otelcol-contrib.exe", StringComparison.OrdinalIgnoreCase))
-                        .OrderByDescending(f => f.LastWriteTimeUtc)
-                        .FirstOrDefault();
-                    if (selected is not null)
-                    {
-                        return selected.FullName;
-                    }
-                }
-            }
-        }
-
-        return null;
+        return RuntimeExecutableLocator.FindLatestExecutable(
+            "collector",
+            "otelcol-contrib*.exe",
+            file => file.Name.Equals("otelcol-contrib.exe", StringComparison.OrdinalIgnoreCase));
     }
 
     private string ResolveFileLogExportPath(string collectorDir)
