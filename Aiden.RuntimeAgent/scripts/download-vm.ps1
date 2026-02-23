@@ -2,17 +2,48 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Version,
 
-    [Parameter(Mandatory = $true)]
-    [string]$DownloadUrl,
+    [Parameter(Mandatory = $false)]
+    [string]$DownloadUrl = "",
 
-    [Parameter(Mandatory = $true)]
-    [string]$Sha256
+    [Parameter(Mandatory = $false)]
+    [string]$Sha256 = ""
 )
 
 $ErrorActionPreference = "Stop"
 
-if ([string]::IsNullOrWhiteSpace($Version) -or [string]::IsNullOrWhiteSpace($DownloadUrl) -or [string]::IsNullOrWhiteSpace($Sha256)) {
-    throw "Version, DownloadUrl, Sha256 must all be provided."
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    throw "Version must be provided."
+}
+
+if ([string]::IsNullOrWhiteSpace($DownloadUrl)) {
+    $DownloadUrl = "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/$Version/victoria-metrics-windows-amd64-$Version.zip"
+}
+
+function Resolve-Sha256FromChecksums {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Version,
+        [Parameter(Mandatory = $true)]
+        [string]$ArchiveFileName
+    )
+
+    $candidateFiles = @("checksums.txt", "sha256sums.txt")
+    foreach ($candidate in $candidateFiles) {
+        $checksumsUrl = "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/$Version/$candidate"
+        try {
+            Write-Host "Resolving SHA256 from: $checksumsUrl"
+            $checksumsText = (Invoke-WebRequest -Uri $checksumsUrl -UseBasicParsing).Content
+            $match = [regex]::Match($checksumsText, "(?im)^([a-f0-9]{64})\s+\*?$([regex]::Escape($ArchiveFileName))\s*$")
+            if ($match.Success) {
+                return $match.Groups[1].Value.ToLowerInvariant()
+            }
+        }
+        catch {
+            continue
+        }
+    }
+
+    throw "Unable to resolve SHA256 for $ArchiveFileName. Provide -Sha256 explicitly."
 }
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -30,6 +61,11 @@ New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
 $tempZip = Join-Path $env:TEMP ("victoria-metrics-" + $Version + ".zip")
 if (Test-Path $tempZip) {
     Remove-Item -Force $tempZip
+}
+
+if ([string]::IsNullOrWhiteSpace($Sha256)) {
+    $archiveName = Split-Path -Leaf $DownloadUrl
+    $Sha256 = Resolve-Sha256FromChecksums -Version $Version -ArchiveFileName $archiveName
 }
 
 Write-Host "Downloading: $DownloadUrl"

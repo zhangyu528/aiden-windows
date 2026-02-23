@@ -20,6 +20,7 @@ powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-v
 Notes:
 
 - The script verifies SHA256 before extraction.
+- `-DownloadUrl` and `-Sha256` are optional. When omitted, the script uses default URL pattern and tries to resolve SHA256 from release checksums.
 - Runtime binaries are excluded by `.gitignore`.
 
 ## download-collector.ps1
