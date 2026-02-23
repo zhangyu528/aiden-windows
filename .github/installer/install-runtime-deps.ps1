@@ -178,7 +178,14 @@ function Install-Collector {
     try {
         $archiveName = Split-Path -Leaf $collectorSpec.DownloadUrl
         $expectedCollectorSha = if ([string]::IsNullOrWhiteSpace($collectorSpec.Sha256)) {
-            Resolve-Sha256FromChecksums -version $collectorSpec.Version -archiveFileName $archiveName
+            try {
+                Resolve-Sha256FromChecksums -version $collectorSpec.Version -archiveFileName $archiveName
+            }
+            catch {
+                Write-Log "[OTEL] unable to resolve sha256 from checksums, continue without hash verification: $($_.Exception.Message)"
+                Write-Warning "Unable to resolve OTel SHA256 from release checksums. Continuing without hash verification. Details: $($_.Exception.Message)"
+                ""
+            }
         }
         else {
             $collectorSpec.Sha256
@@ -186,8 +193,13 @@ function Install-Collector {
         Write-Log "[OTEL] expected sha256: $expectedCollectorSha"
         Write-Log "[OTEL] download start"
         Invoke-Download -url $collectorSpec.DownloadUrl -destination $archive
-        Verify-Sha256 -file $archive -expected $expectedCollectorSha
-        Write-Log "[OTEL] sha256 verified"
+        if (-not [string]::IsNullOrWhiteSpace($expectedCollectorSha)) {
+            Verify-Sha256 -file $archive -expected $expectedCollectorSha
+            Write-Log "[OTEL] sha256 verified"
+        }
+        else {
+            Write-Log "[OTEL] sha256 verification skipped"
+        }
         Ensure-Directory $extractDir
         if ($collectorSpec.ArchiveType -eq 'zip') {
             Expand-Archive -Path $archive -DestinationPath $extractDir -Force
