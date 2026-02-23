@@ -7,6 +7,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+$logPath = Join-Path $InstallDir 'install-runtime-deps.log'
+function Write-Log {
+    param([string]$Message)
+    Ensure-Directory $InstallDir
+    $timestamp = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+    "$timestamp $Message" | Out-File -FilePath $logPath -Encoding UTF8 -Append
+}
 
 $vmSpec = @{
     Name = 'VictoriaMetrics'
@@ -64,6 +71,7 @@ function Install-Vm {
     $targetDir = Join-Path $InstallDir ($vmSpec.Destination + '\' + $vmSpec.Version)
     $exePath = Join-Path $targetDir 'victoria-metrics.exe'
     if ((Test-Path $exePath) -and (-not $Force.IsPresent)) {
+        Write-Log "VictoriaMetrics already installed at $exePath"
         Write-Host "VictoriaMetrics already installed at $exePath"
         return
     }
@@ -77,9 +85,11 @@ function Install-Vm {
         Expand-Archive -Path $archive -DestinationPath $extractDir -Force
         $found = Get-ChildItem -Recurse -Path $extractDir -Filter $vmSpec.ExecutablePattern | Select-Object -First 1
         if (-not $found) {
+            Write-Log "VictoriaMetrics executable not found inside the archive."
             throw "VictoriaMetrics executable not found inside the archive."
         }
         Copy-Item -Path $found.FullName -Destination $exePath -Force
+        Write-Log "VictoriaMetrics installed to $exePath"
         Write-Host "VictoriaMetrics installed to $exePath"
     }
     finally {
@@ -96,6 +106,7 @@ function Install-Collector {
     $targetDir = Join-Path $InstallDir ($collectorSpec.Destination + '\' + $collectorSpec.Version)
     $exePath = Join-Path $targetDir $collectorSpec.ExecutablePattern
     if ((Test-Path $exePath) -and (-not $Force.IsPresent)) {
+        Write-Log "OTel Collector already installed at $exePath"
         Write-Host "OTel Collector already installed at $exePath"
         return
     }
@@ -128,9 +139,11 @@ function Install-Collector {
         Copy-Item -Path (Join-Path $extractDir '*') -Destination $targetDir -Recurse -Force
         $found = Get-ChildItem -Recurse -Path $targetDir -Filter $collectorSpec.ExecutablePattern | Select-Object -First 1
         if (-not $found) {
+            Write-Log "otelcol-contrib.exe not found after extraction."
             throw "otelcol-contrib.exe not found after extraction."
         }
 
+        Write-Log "OTel Collector installed to $($found.FullName)"
         Write-Host "OTel Collector installed to $($found.FullName)"
     }
     finally {
@@ -144,7 +157,13 @@ function Install-Collector {
 }
 
 Ensure-Directory $InstallDir
-Write-Host "Installing runtime dependencies into $InstallDir"
-Install-Vm
-Install-Collector
-Write-Host "Runtime components ready."
+Write-Log "Installing runtime dependencies into $InstallDir"
+try {
+    Install-Vm
+    Install-Collector
+    Write-Log "Runtime components ready."
+}
+catch {
+    Write-Log "Runtime dependency installation failed: $($_.Exception.Message)"
+    throw
+}
