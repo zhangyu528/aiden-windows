@@ -28,7 +28,7 @@ $collectorSpec = @{
     Name = 'OpenTelemetry Collector'
     Version = 'v0.146.1'
     DownloadUrl = 'https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol-contrib_0.146.1_windows_amd64.tar.gz'
-    Sha256 = '0eaa1ff9d0f5d8009921667368981617641cebb1766fc7b38be95d5dc21a126a'
+    Sha256 = ''
     Destination = 'Aiden.RuntimeAgent\runtime\collector'
     ExecutablePattern = 'otelcol-contrib.exe'
     ArchiveType = 'tar.gz'
@@ -65,6 +65,17 @@ function Verify-Sha256([string]$file, [string]$expected) {
     if ($actualHash -ne $expected.ToLowerInvariant()) {
         throw "SHA256 mismatch for $file. expected=$expected actual=$actualHash"
     }
+}
+
+function Resolve-Sha256FromChecksums([string]$version, [string]$archiveFileName) {
+    $checksumsUrl = "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/$version/checksums.txt"
+    Write-Log "Resolving SHA256 from $checksumsUrl"
+    $checksumsText = (Invoke-WebRequest -Uri $checksumsUrl -UseBasicParsing).Content
+    $match = [regex]::Match($checksumsText, "(?im)^([a-f0-9]{64})\s+\*?$([regex]::Escape($archiveFileName))\s*$")
+    if (-not $match.Success) {
+        throw "Unable to resolve SHA256 for $archiveFileName from checksums.txt"
+    }
+    return $match.Groups[1].Value.ToLowerInvariant()
 }
 
 function Ensure-Directory([string]$path) {
@@ -126,9 +137,17 @@ function Install-Collector {
     $archive = New-DownloadTempFile -prefix "otelcol-$($collectorSpec.Version)" -extension ".tar.gz"
     $extractDir = Join-Path $env:TEMP ("otelcol-unpack-" + [guid]::NewGuid().ToString('N'))
     try {
+        $archiveName = Split-Path -Leaf $collectorSpec.DownloadUrl
+        $expectedCollectorSha = if ([string]::IsNullOrWhiteSpace($collectorSpec.Sha256)) {
+            Resolve-Sha256FromChecksums -version $collectorSpec.Version -archiveFileName $archiveName
+        }
+        else {
+            $collectorSpec.Sha256
+        }
+        Write-Log "[OTEL] expected sha256: $expectedCollectorSha"
         Write-Log "[OTEL] download start"
         Invoke-Download -url $collectorSpec.DownloadUrl -destination $archive
-        Verify-Sha256 -file $archive -expected $collectorSpec.Sha256
+        Verify-Sha256 -file $archive -expected $expectedCollectorSha
         Write-Log "[OTEL] sha256 verified"
         Ensure-Directory $extractDir
         if ($collectorSpec.ArchiveType -eq 'zip') {
