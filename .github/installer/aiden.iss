@@ -39,7 +39,7 @@ Name: "{group}\Aiden Tray Monitor"; Filename: "{app}\Aiden.TrayMonitor.exe"
 Name: "{commondesktop}\Aiden Tray Monitor"; Filename: "{app}\Aiden.TrayMonitor.exe"; Tasks: desktopicon
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "AidenRuntimeAgent"; ValueData: """{app}\Aiden.RuntimeAgent.exe"""; Flags: uninsdeletevalue; Check: not IsUninstallMode
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "AidenRuntimeAgent"; ValueData: """{app}\Aiden.RuntimeAgent.exe"""; Flags: uninsdeletevalue
 
 [Run]
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\install-runtime-deps.ps1"" -InstallDir ""{app}"""; Flags: waituntilterminated runhidden; Check: FileExists('{app}\scripts\install-runtime-deps.ps1')
