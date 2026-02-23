@@ -233,6 +233,7 @@ function Install-Collector {
         }
 
         Copy-Item -Path (Join-Path $extractDir '*') -Destination $targetDir -Recurse -Force
+        Get-ChildItem -Path $targetDir -Recurse -File -Include *.tar.gz,*.zip -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
         $found = Get-ChildItem -Recurse -Path $targetDir -Filter $collectorSpec.ExecutablePattern | Select-Object -First 1
         if (-not $found) {
             Write-Log "otelcol-contrib.exe not found after extraction."
