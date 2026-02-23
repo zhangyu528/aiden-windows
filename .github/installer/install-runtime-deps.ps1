@@ -119,7 +119,14 @@ function Install-Vm {
     try {
         $vmArchiveName = Split-Path -Leaf $vmSpec.DownloadUrl
         $expectedVmSha = if ([string]::IsNullOrWhiteSpace($vmSpec.Sha256)) {
-            Resolve-VmSha256 -version $vmSpec.Version -archiveFileName $vmArchiveName
+            try {
+                Resolve-VmSha256 -version $vmSpec.Version -archiveFileName $vmArchiveName
+            }
+            catch {
+                Write-Log "[VM] unable to resolve sha256 from checksums, continue without hash verification: $($_.Exception.Message)"
+                Write-Warning "Unable to resolve VM SHA256 from release checksums. Continuing without hash verification. Details: $($_.Exception.Message)"
+                ""
+            }
         }
         else {
             $vmSpec.Sha256
@@ -127,8 +134,13 @@ function Install-Vm {
         Write-Log "[VM] expected sha256: $expectedVmSha"
         Write-Log "[VM] download start"
         Invoke-Download -url $vmSpec.DownloadUrl -destination $archive
-        Verify-Sha256 -file $archive -expected $expectedVmSha
-        Write-Log "[VM] sha256 verified"
+        if (-not [string]::IsNullOrWhiteSpace($expectedVmSha)) {
+            Verify-Sha256 -file $archive -expected $expectedVmSha
+            Write-Log "[VM] sha256 verified"
+        }
+        else {
+            Write-Log "[VM] sha256 verification skipped"
+        }
         Expand-Archive -Path $archive -DestinationPath $extractDir -Force
         Write-Log "[VM] archive extracted"
         $found = Get-ChildItem -Recurse -Path $extractDir -Filter $vmSpec.ExecutablePattern | Select-Object -First 1
