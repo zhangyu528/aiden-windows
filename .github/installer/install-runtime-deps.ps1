@@ -46,8 +46,10 @@ function Invoke-Download([string]$url, [string]$destination) {
     if (Test-Path $destination) {
         Remove-Item -Force $destination
     }
+    Write-Log "Downloading $url"
     Write-Host "Downloading $url"
     Invoke-WebRequest -Uri $url -OutFile $destination -UseBasicParsing
+    Write-Log "Downloaded to $destination"
 }
 
 function Verify-Sha256([string]$file, [string]$expected) {
@@ -70,6 +72,7 @@ function Ensure-Directory([string]$path) {
 function Install-Vm {
     $targetDir = Join-Path $InstallDir ($vmSpec.Destination + '\' + $vmSpec.Version)
     $exePath = Join-Path $targetDir 'victoria-metrics.exe'
+    Write-Log "[VM] target: $exePath"
     if ((Test-Path $exePath) -and (-not $Force.IsPresent)) {
         Write-Log "VictoriaMetrics already installed at $exePath"
         Write-Host "VictoriaMetrics already installed at $exePath"
@@ -80,9 +83,12 @@ function Install-Vm {
     $archive = New-DownloadTempFile "victoria-metrics-$($vmSpec.Version).zip"
     $extractDir = Join-Path $env:TEMP ("victoria-metrics-unpack-" + [guid]::NewGuid().ToString('N'))
     try {
+        Write-Log "[VM] download start"
         Invoke-Download -url $vmSpec.DownloadUrl -destination $archive
         Verify-Sha256 -file $archive -expected $vmSpec.Sha256
+        Write-Log "[VM] sha256 verified"
         Expand-Archive -Path $archive -DestinationPath $extractDir -Force
+        Write-Log "[VM] archive extracted"
         $found = Get-ChildItem -Recurse -Path $extractDir -Filter $vmSpec.ExecutablePattern | Select-Object -First 1
         if (-not $found) {
             Write-Log "VictoriaMetrics executable not found inside the archive."
@@ -105,6 +111,7 @@ function Install-Vm {
 function Install-Collector {
     $targetDir = Join-Path $InstallDir ($collectorSpec.Destination + '\' + $collectorSpec.Version)
     $exePath = Join-Path $targetDir $collectorSpec.ExecutablePattern
+    Write-Log "[OTEL] target: $exePath"
     if ((Test-Path $exePath) -and (-not $Force.IsPresent)) {
         Write-Log "OTel Collector already installed at $exePath"
         Write-Host "OTel Collector already installed at $exePath"
@@ -115,18 +122,27 @@ function Install-Collector {
     $archive = New-DownloadTempFile "otelcol-$($collectorSpec.Version)"
     $extractDir = Join-Path $env:TEMP ("otelcol-unpack-" + [guid]::NewGuid().ToString('N'))
     try {
+        Write-Log "[OTEL] download start"
         Invoke-Download -url $collectorSpec.DownloadUrl -destination $archive
         Verify-Sha256 -file $archive -expected $collectorSpec.Sha256
+        Write-Log "[OTEL] sha256 verified"
         Ensure-Directory $extractDir
         if ($collectorSpec.ArchiveType -eq 'zip') {
             Expand-Archive -Path $archive -DestinationPath $extractDir -Force
+            Write-Log "[OTEL] zip extracted"
         }
         elseif ($collectorSpec.ArchiveType -eq 'tar.gz') {
+            $tarCmd = Get-Command tar -ErrorAction SilentlyContinue
+            if (-not $tarCmd) {
+                Write-Log "[OTEL] tar command not found"
+                throw "tar command is required to extract .tar.gz archives but was not found."
+            }
             $localTar = Join-Path $extractDir 'collector.tar.gz'
             Copy-Item -Path $archive -Destination $localTar -Force
             Push-Location $extractDir
             try {
                 tar -xzf ".\collector.tar.gz"
+                Write-Log "[OTEL] tar.gz extracted"
             }
             finally {
                 Pop-Location

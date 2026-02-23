@@ -47,6 +47,10 @@ if (Test-Path $helperDestDir) {
 }
 New-Item -ItemType Directory -Path $helperDestDir -Force | Out-Null
 Copy-Item -Path $helperScriptSource -Destination $helperDestDir -Force
+$packagedHelper = Join-Path $helperDestDir 'install-runtime-deps.ps1'
+if (-not (Test-Path $packagedHelper)) {
+    throw "Packaged helper script not found after copy: $packagedHelper"
+}
 Write-Host "Payload staged in $packageDir"
 $info = Get-ChildItem -Path $packageDir -Recurse -File | Measure-Object -Property Length -Sum
 Write-Host "  files: $($info.Count), size: $([math]::Round($info.Sum / 1MB, 2)) MB"
