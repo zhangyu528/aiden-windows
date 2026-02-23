@@ -19,6 +19,7 @@ AppName=Aiden
 AppVersion={#AppVersion}
 DefaultDirName={localappdata}\Aiden
 DefaultGroupName=Aiden
+SetupIconFile={app}\aiden.ico
 OutputDir={#OutputDir}
 OutputBaseFilename={#InstallerFilename}
 DisableProgramGroupPage=no
@@ -35,8 +36,8 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs 
 Name: desktopicon; Description: Create a desktop icon; GroupDescription: Additional icons; Flags: unchecked
 
 [Icons]
-Name: "{group}\Aiden Tray Monitor"; Filename: "{app}\Aiden.TrayMonitor.exe"
-Name: "{commondesktop}\Aiden Tray Monitor"; Filename: "{app}\Aiden.TrayMonitor.exe"; Tasks: desktopicon
+Name: "{group}\Aiden Tray Monitor"; Filename: "{app}\Aiden.TrayMonitor.exe"; IconFilename: "{app}\aiden.ico"
+Name: "{commondesktop}\Aiden Tray Monitor"; Filename: "{app}\Aiden.TrayMonitor.exe"; Tasks: desktopicon; IconFilename: "{app}\aiden.ico"
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "AidenRuntimeAgent"; ValueData: """{app}\Aiden.RuntimeAgent.exe"""; Flags: uninsdeletevalue

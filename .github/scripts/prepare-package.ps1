@@ -29,6 +29,13 @@ foreach ($path in @($trayPublish, $agentPublish)) {
 Write-Host "Staging install payload for version $Version"
 Copy-Item -Path (Join-Path $trayPublish '*') -Destination $packageDir -Recurse -Force
 Copy-Item -Path (Join-Path $agentPublish '*') -Destination $packageDir -Recurse -Force
+Write-Host "Copying installer icon"
+$iconSource = Join-Path $repoRoot 'Aiden.TrayMonitor\Assets\aiden.ico'
+if (Test-Path $iconSource) {
+    Copy-Item -Path $iconSource -Destination $packageDir -Force
+} else {
+    Write-Warning "Icon not found: $iconSource"
+}
 Write-Host "Copying installer runtime helper"
 $helperScriptSource = Join-Path $repoRoot '.github\installer\install-runtime-deps.ps1'
 if (-not (Test-Path $helperScriptSource)) {
