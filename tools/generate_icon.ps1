@@ -34,6 +34,12 @@ $iconPath = Join-Path (Get-Location) 'Aiden.TrayMonitor\Assets\aiden.ico'
 if (Test-Path $iconPath) {
     Remove-Item -Force $iconPath
 }
-$bitmap.Save($iconPath, [System.Drawing.Imaging.ImageFormat]::Icon)
+$handle = $bitmap.GetHicon()
+$icon = [System.Drawing.Icon]::FromHandle($handle)
+$fs = [System.IO.File]::Open($iconPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
+$icon.Save($fs)
+$fs.Dispose()
+[System.Runtime.InteropServices.Marshal]::Release($handle) | Out-Null
+$icon.Dispose()
 $graphics.Dispose()
 $bitmap.Dispose()
