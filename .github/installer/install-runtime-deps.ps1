@@ -19,7 +19,7 @@ $vmSpec = @{
     Name = 'VictoriaMetrics'
     Version = 'v1.113.0'
     DownloadUrl = 'https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.113.0/victoria-metrics-windows-amd64-v1.113.0.zip'
-    Sha256 = 'ed8f660442a45b260a2c0a0976440ecec863bb75ccb7cec6aad9580364a92de6'
+    Sha256 = ''
     Destination = 'Aiden.RuntimeAgent\runtime\vm'
     ExecutablePattern = 'victoria-metrics*.exe'
 }
@@ -78,6 +78,25 @@ function Resolve-Sha256FromChecksums([string]$version, [string]$archiveFileName)
     return $match.Groups[1].Value.ToLowerInvariant()
 }
 
+function Resolve-VmSha256([string]$version, [string]$archiveFileName) {
+    $candidateFiles = @("checksums.txt", "sha256sums.txt")
+    foreach ($candidate in $candidateFiles) {
+        $checksumsUrl = "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/$version/$candidate"
+        try {
+            Write-Log "Resolving VM SHA256 from $checksumsUrl"
+            $checksumsText = (Invoke-WebRequest -Uri $checksumsUrl -UseBasicParsing).Content
+            $match = [regex]::Match($checksumsText, "(?im)^([a-f0-9]{64})\s+\*?$([regex]::Escape($archiveFileName))\s*$")
+            if ($match.Success) {
+                return $match.Groups[1].Value.ToLowerInvariant()
+            }
+        }
+        catch {
+            continue
+        }
+    }
+    throw "Unable to resolve VM SHA256 for $archiveFileName. Provide vmSpec.Sha256 explicitly."
+}
+
 function Ensure-Directory([string]$path) {
     if (-not (Test-Path $path)) {
         New-Item -ItemType Directory -Path $path -Force | Out-Null
@@ -98,9 +117,17 @@ function Install-Vm {
     $archive = New-DownloadTempFile -prefix "victoria-metrics-$($vmSpec.Version)" -extension ".zip"
     $extractDir = Join-Path $env:TEMP ("victoria-metrics-unpack-" + [guid]::NewGuid().ToString('N'))
     try {
+        $vmArchiveName = Split-Path -Leaf $vmSpec.DownloadUrl
+        $expectedVmSha = if ([string]::IsNullOrWhiteSpace($vmSpec.Sha256)) {
+            Resolve-VmSha256 -version $vmSpec.Version -archiveFileName $vmArchiveName
+        }
+        else {
+            $vmSpec.Sha256
+        }
+        Write-Log "[VM] expected sha256: $expectedVmSha"
         Write-Log "[VM] download start"
         Invoke-Download -url $vmSpec.DownloadUrl -destination $archive
-        Verify-Sha256 -file $archive -expected $vmSpec.Sha256
+        Verify-Sha256 -file $archive -expected $expectedVmSha
         Write-Log "[VM] sha256 verified"
         Expand-Archive -Path $archive -DestinationPath $extractDir -Force
         Write-Log "[VM] archive extracted"
