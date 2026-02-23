@@ -1,0 +1,101 @@
+name: Build Release Installer
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-installer-${{ github.event.release.id }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_VERSION: 8.0.x
+  RID: win-x64
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Determine release version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = '${{ github.event.release.tag_name }}'
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+            throw 'Release tag_name is empty'
+          }
+          if ($tag -match '^v(?<clean>.+)$') {
+            $version = $Matches.clean
+          } else {
+            $version = $tag
+          }
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            $version = '0.0.0'
+          }
+          Write-Output "version=$version" >> $Env:GITHUB_OUTPUT
+
+      - name: Publish Tray Monitor
+        run: |
+          dotnet publish Aiden.TrayMonitor/Aiden.TrayMonitor.csproj `
+            -c Release `
+            -r ${{ env.RID }} `
+            --self-contained true `
+            /p:Version=${{ steps.version.outputs.version }} `
+            /p:PublishSingleFile=true `
+            /p:IncludeNativeLibrariesForSelfExtract=true `
+            /p:DebugType=None `
+            /p:DebugSymbols=false `
+            -o artifacts/stage/tray
+
+      - name: Publish Runtime Agent
+        run: |
+          dotnet publish Aiden.RuntimeAgent/Aiden.RuntimeAgent.csproj `
+            -c Release `
+            -r ${{ env.RID }} `
+            --self-contained true `
+            /p:Version=${{ steps.version.outputs.version }} `
+            /p:PublishSingleFile=true `
+            /p:IncludeNativeLibrariesForSelfExtract=true `
+            /p:DebugType=None `
+            /p:DebugSymbols=false `
+            -o artifacts/stage/agent
+
+      - name: Stage installer payload
+        shell: pwsh
+        run: |
+          & .github/scripts/prepare-package.ps1 -Version ${{ steps.version.outputs.version }}
+
+      - name: Build Inno Setup installer
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $source = "${{ github.workspace }}\artifacts\stage\package"
+          $output = "${{ github.workspace }}\artifacts\installer"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "/DAppVersion=${{ env.VERSION }}" `
+            "/DSourceDir=$source" `
+            "/DOutputDir=$output" `
+            ".github\installer\aiden.iss"
+
+      - name: Upload installer asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: artifacts/installer/Aiden-Setup-${{ steps.version.outputs.version }}-win-x64.exe
+          asset_name: Aiden-Setup-${{ steps.version.outputs.version }}-win-x64.exe
+          asset_content_type: application/octet-stream
+          token: ${{ secrets.GITHUB_TOKEN }}
