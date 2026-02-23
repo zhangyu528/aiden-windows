@@ -98,4 +98,3 @@ jobs:
           asset_path: artifacts/installer/Aiden-Setup-${{ steps.version.outputs.version }}-win-x64.exe
           asset_name: Aiden-Setup-${{ steps.version.outputs.version }}-win-x64.exe
           asset_content_type: application/octet-stream
-          token: ${{ secrets.GITHUB_TOKEN }}
