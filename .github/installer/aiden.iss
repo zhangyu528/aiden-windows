@@ -46,14 +46,5 @@ Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Fil
 
 [Run]
 Filename: "{app}\Aiden.TrayMonitor.exe"; Description: Launch Aiden Tray Monitor; Flags: nowait postinstall skipifsilent
-[Code]
-function InitializeSetup(): Boolean;
-begin
-  Result := True;
-  if not DirExists(ExpandConstant('{#SourceDir}')) then
-  begin
-    MsgBox(Format('Staging directory %s was not found. Run the packaging script before building the installer.', [ExpandConstant('{#SourceDir}')]), mbError, MB_OK);
-    Result := False;
-  end;
-end;
+
 
