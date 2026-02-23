@@ -89,3 +89,28 @@ Notes:
 - Converted Codex metrics are exported as cumulative series using
   `deltatocumulative` + `metricstarttime` processors.
 - Query visibility in VictoriaMetrics may lag by about 20-30 seconds after ingest.
+
+## Release Signature and Integrity Verification
+
+Release artifacts are signed by the project release workflow.
+
+- `Aiden.TrayMonitor.exe`
+- `Aiden.RuntimeAgent.exe`
+- `Aiden-Setup-<version>-win-x64.exe`
+
+Verify installer signature:
+
+```powershell
+Get-AuthenticodeSignature .\Aiden-Setup-<version>-win-x64.exe | Format-List Status,SignerCertificate,TimeStamperCertificate
+```
+
+Expected `Status`: `Valid`.
+
+Each release also includes `SHA256SUMS.txt`.
+Verify file hash against published digest:
+
+```powershell
+Get-FileHash -Algorithm SHA256 .\Aiden-Setup-<version>-win-x64.exe
+```
+
+Compare the output hash with the corresponding line in `SHA256SUMS.txt`.
