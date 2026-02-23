@@ -114,3 +114,5 @@ Get-FileHash -Algorithm SHA256 .\Aiden-Setup-<version>-win-x64.exe
 ```
 
 Compare the output hash with the corresponding line in `SHA256SUMS.txt`.
+
+For full policy details, see `CODE_SIGNING_POLICY.md`.
