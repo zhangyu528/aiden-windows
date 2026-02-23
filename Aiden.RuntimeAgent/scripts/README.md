@@ -20,7 +20,7 @@ powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-v
 Notes:
 
 - The script verifies SHA256 before extraction.
-- `-DownloadUrl` and `-Sha256` are optional. When omitted, the script uses default URL pattern and tries to resolve SHA256 from release checksums.
+- `-DownloadUrl` and `-Sha256` are optional. When omitted, the script uses default URL pattern and resolves SHA256 from the release assets API.
 - Runtime binaries are excluded by `.gitignore`.
 
 ## download-collector.ps1
@@ -46,7 +46,7 @@ Notes:
 - Default artifact is contrib collector (`otelcol-contrib_...`).
 - Script requires `otelcol-contrib.exe`; core collector is not accepted.
 - `-VerifyComponents` defaults to `true` and verifies required components.
-- When `-Sha256` is omitted, script tries to resolve hash from release `checksums.txt`.
+- When `-Sha256` is omitted, script resolves hash from release assets API checksum files.
 
 ## upgrade-stop-install-start.ps1
 

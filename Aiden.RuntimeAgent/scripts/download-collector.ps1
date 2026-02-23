@@ -24,23 +24,43 @@ if ([string]::IsNullOrWhiteSpace($DownloadUrl)) {
 
 $expectedExeName = "otelcol-contrib.exe"
 
-function Resolve-Sha256FromChecksums {
+function Resolve-Sha256FromReleaseAssets {
     param(
+        [Parameter(Mandatory = $true)]
+        [string]$Repo,
         [Parameter(Mandatory = $true)]
         [string]$Version,
         [Parameter(Mandatory = $true)]
         [string]$ArchiveFileName
     )
 
-    $checksumsUrl = "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/$Version/checksums.txt"
-    Write-Host "Resolving SHA256 from: $checksumsUrl"
-    $checksumsText = (Invoke-WebRequest -Uri $checksumsUrl -UseBasicParsing).Content
-    $match = [regex]::Match($checksumsText, "(?im)^([a-f0-9]{64})\s+\*?$([regex]::Escape($ArchiveFileName))\s*$")
-    if (-not $match.Success) {
-        throw "Unable to resolve SHA256 for $ArchiveFileName from checksums.txt"
+    $apiUrl = "https://api.github.com/repos/$Repo/releases/tags/$Version"
+    $headers = @{ "User-Agent" = "aiden-runtime-script" }
+    $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers
+    if (-not $release -or -not $release.assets) {
+        throw "Release assets not found for $Repo@$Version"
     }
 
-    return $match.Groups[1].Value.ToLowerInvariant()
+    $checksumAssets = @($release.assets | Where-Object {
+        ($_.name -match '(?i)checksum|sha256') -and ($_.name -match '(?i)\.txt$')
+    })
+    foreach ($asset in $checksumAssets) {
+        try {
+            Write-Host "Resolving SHA256 from: $($asset.browser_download_url)"
+            $checksumsText = (Invoke-WebRequest -Uri $asset.browser_download_url -Headers $headers -UseBasicParsing).Content
+            $escapedName = [regex]::Escape($ArchiveFileName)
+            $pattern = "(?im)^([a-f0-9]{64})\s+\*?(?:.+/)?$escapedName\s*$"
+            $match = [regex]::Match($checksumsText, $pattern)
+            if ($match.Success) {
+                return $match.Groups[1].Value.ToLowerInvariant()
+            }
+        }
+        catch {
+            continue
+        }
+    }
+
+    throw "Unable to resolve SHA256 for $ArchiveFileName from release checksum assets"
 }
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -60,10 +80,10 @@ New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
 $archiveName = Split-Path -Leaf $DownloadUrl
 $resolvedSha256 = if ([string]::IsNullOrWhiteSpace($Sha256)) {
     try {
-        Resolve-Sha256FromChecksums -Version $Version -ArchiveFileName $archiveName
+        Resolve-Sha256FromReleaseAssets -Repo "open-telemetry/opentelemetry-collector-releases" -Version $Version -ArchiveFileName $archiveName
     }
     catch {
-        Write-Warning "Unable to auto-resolve SHA256 from release checksums. Continuing without hash verification. Details: $($_.Exception.Message)"
+        Write-Warning "Unable to auto-resolve SHA256 from release assets. Continuing without hash verification. Details: $($_.Exception.Message)"
         ""
     }
 }

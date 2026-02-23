@@ -19,21 +19,33 @@ if ([string]::IsNullOrWhiteSpace($DownloadUrl)) {
     $DownloadUrl = "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/$Version/victoria-metrics-windows-amd64-$Version.zip"
 }
 
-function Resolve-Sha256FromChecksums {
+function Resolve-Sha256FromReleaseAssets {
     param(
+        [Parameter(Mandatory = $true)]
+        [string]$Repo,
         [Parameter(Mandatory = $true)]
         [string]$Version,
         [Parameter(Mandatory = $true)]
         [string]$ArchiveFileName
     )
 
-    $candidateFiles = @("checksums.txt", "sha256sums.txt")
-    foreach ($candidate in $candidateFiles) {
-        $checksumsUrl = "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/$Version/$candidate"
+    $apiUrl = "https://api.github.com/repos/$Repo/releases/tags/$Version"
+    $headers = @{ "User-Agent" = "aiden-runtime-script" }
+    $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers
+    if (-not $release -or -not $release.assets) {
+        throw "Release assets not found for $Repo@$Version"
+    }
+
+    $checksumAssets = @($release.assets | Where-Object {
+        ($_.name -match '(?i)checksum|sha256') -and ($_.name -match '(?i)\.txt$')
+    })
+    foreach ($asset in $checksumAssets) {
         try {
-            Write-Host "Resolving SHA256 from: $checksumsUrl"
-            $checksumsText = (Invoke-WebRequest -Uri $checksumsUrl -UseBasicParsing).Content
-            $match = [regex]::Match($checksumsText, "(?im)^([a-f0-9]{64})\s+\*?$([regex]::Escape($ArchiveFileName))\s*$")
+            Write-Host "Resolving SHA256 from: $($asset.browser_download_url)"
+            $checksumsText = (Invoke-WebRequest -Uri $asset.browser_download_url -Headers $headers -UseBasicParsing).Content
+            $escapedName = [regex]::Escape($ArchiveFileName)
+            $pattern = "(?im)^([a-f0-9]{64})\s+\*?(?:.+/)?$escapedName\s*$"
+            $match = [regex]::Match($checksumsText, $pattern)
             if ($match.Success) {
                 return $match.Groups[1].Value.ToLowerInvariant()
             }
@@ -65,7 +77,7 @@ if (Test-Path $tempZip) {
 
 if ([string]::IsNullOrWhiteSpace($Sha256)) {
     $archiveName = Split-Path -Leaf $DownloadUrl
-    $Sha256 = Resolve-Sha256FromChecksums -Version $Version -ArchiveFileName $archiveName
+    $Sha256 = Resolve-Sha256FromReleaseAssets -Repo "VictoriaMetrics/VictoriaMetrics" -Version $Version -ArchiveFileName $archiveName
 }
 
 Write-Host "Downloading: $DownloadUrl"
