@@ -34,8 +34,12 @@ $collectorSpec = @{
     ArchiveType = 'tar.gz'
 }
 
-function New-DownloadTempFile([string]$prefix) {
-    $candidate = Join-Path $env:TEMP ("$prefix-" + [guid]::NewGuid().ToString('N'))
+function New-DownloadTempFile([string]$prefix, [string]$extension = '') {
+    $suffix = ''
+    if (-not [string]::IsNullOrWhiteSpace($extension)) {
+        $suffix = if ($extension.StartsWith('.')) { $extension } else { ".$extension" }
+    }
+    $candidate = Join-Path $env:TEMP ("$prefix-" + [guid]::NewGuid().ToString('N') + $suffix)
     if (Test-Path $candidate) {
         Remove-Item -Force $candidate
     }
@@ -80,7 +84,7 @@ function Install-Vm {
     }
 
     Ensure-Directory $targetDir
-    $archive = New-DownloadTempFile "victoria-metrics-$($vmSpec.Version).zip"
+    $archive = New-DownloadTempFile -prefix "victoria-metrics-$($vmSpec.Version)" -extension ".zip"
     $extractDir = Join-Path $env:TEMP ("victoria-metrics-unpack-" + [guid]::NewGuid().ToString('N'))
     try {
         Write-Log "[VM] download start"
@@ -119,7 +123,7 @@ function Install-Collector {
     }
 
     Ensure-Directory $targetDir
-    $archive = New-DownloadTempFile "otelcol-$($collectorSpec.Version)"
+    $archive = New-DownloadTempFile -prefix "otelcol-$($collectorSpec.Version)" -extension ".tar.gz"
     $extractDir = Join-Path $env:TEMP ("otelcol-unpack-" + [guid]::NewGuid().ToString('N'))
     try {
         Write-Log "[OTEL] download start"
