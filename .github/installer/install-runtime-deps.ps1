@@ -67,25 +67,30 @@ function Verify-Sha256([string]$file, [string]$expected) {
     }
 }
 
-function Resolve-Sha256FromChecksums([string]$version, [string]$archiveFileName) {
-    $checksumsUrl = "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/$version/checksums.txt"
-    Write-Log "Resolving SHA256 from $checksumsUrl"
-    $checksumsText = (Invoke-WebRequest -Uri $checksumsUrl -UseBasicParsing).Content
-    $match = [regex]::Match($checksumsText, "(?im)^([a-f0-9]{64})\s+\*?$([regex]::Escape($archiveFileName))\s*$")
-    if (-not $match.Success) {
-        throw "Unable to resolve SHA256 for $archiveFileName from checksums.txt"
+function Resolve-Sha256FromReleaseAssets([string]$repo, [string]$version, [string]$archiveFileName) {
+    $apiUrl = "https://api.github.com/repos/$repo/releases/tags/$version"
+    Write-Log "Resolving SHA256 via release API: $apiUrl"
+    $headers = @{ "User-Agent" = "aiden-installer" }
+    $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers
+    if (-not $release -or -not $release.assets) {
+        throw "Release assets not found for $repo@$version"
     }
-    return $match.Groups[1].Value.ToLowerInvariant()
-}
 
-function Resolve-VmSha256([string]$version, [string]$archiveFileName) {
-    $candidateFiles = @("checksums.txt", "sha256sums.txt")
-    foreach ($candidate in $candidateFiles) {
-        $checksumsUrl = "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/$version/$candidate"
+    $checksumAssets = @($release.assets | Where-Object {
+        ($_.name -match '(?i)checksum|sha256') -and ($_.name -match '(?i)\.txt$')
+    })
+    if ($checksumAssets.Count -eq 0) {
+        throw "No checksum text asset found in $repo@$version release assets"
+    }
+
+    foreach ($asset in $checksumAssets) {
+        $checksumUrl = $asset.browser_download_url
+        Write-Log "Trying checksum asset: $($asset.name)"
         try {
-            Write-Log "Resolving VM SHA256 from $checksumsUrl"
-            $checksumsText = (Invoke-WebRequest -Uri $checksumsUrl -UseBasicParsing).Content
-            $match = [regex]::Match($checksumsText, "(?im)^([a-f0-9]{64})\s+\*?$([regex]::Escape($archiveFileName))\s*$")
+            $checksumsText = (Invoke-WebRequest -Uri $checksumUrl -Headers $headers -UseBasicParsing).Content
+            $escapedName = [regex]::Escape($archiveFileName)
+            $pattern = "(?im)^([a-f0-9]{64})\s+\*?(?:.+/)?$escapedName\s*$"
+            $match = [regex]::Match($checksumsText, $pattern)
             if ($match.Success) {
                 return $match.Groups[1].Value.ToLowerInvariant()
             }
@@ -94,7 +99,8 @@ function Resolve-VmSha256([string]$version, [string]$archiveFileName) {
             continue
         }
     }
-    throw "Unable to resolve VM SHA256 for $archiveFileName. Provide vmSpec.Sha256 explicitly."
+
+    throw "Unable to resolve SHA256 for $archiveFileName from release checksum assets."
 }
 
 function Ensure-Directory([string]$path) {
@@ -120,7 +126,7 @@ function Install-Vm {
         $vmArchiveName = Split-Path -Leaf $vmSpec.DownloadUrl
         $expectedVmSha = if ([string]::IsNullOrWhiteSpace($vmSpec.Sha256)) {
             try {
-                Resolve-VmSha256 -version $vmSpec.Version -archiveFileName $vmArchiveName
+                Resolve-Sha256FromReleaseAssets -repo "VictoriaMetrics/VictoriaMetrics" -version $vmSpec.Version -archiveFileName $vmArchiveName
             }
             catch {
                 Write-Log "[VM] unable to resolve sha256 from checksums, continue without hash verification: $($_.Exception.Message)"
@@ -179,7 +185,7 @@ function Install-Collector {
         $archiveName = Split-Path -Leaf $collectorSpec.DownloadUrl
         $expectedCollectorSha = if ([string]::IsNullOrWhiteSpace($collectorSpec.Sha256)) {
             try {
-                Resolve-Sha256FromChecksums -version $collectorSpec.Version -archiveFileName $archiveName
+                Resolve-Sha256FromReleaseAssets -repo "open-telemetry/opentelemetry-collector-releases" -version $collectorSpec.Version -archiveFileName $archiveName
             }
             catch {
                 Write-Log "[OTEL] unable to resolve sha256 from checksums, continue without hash verification: $($_.Exception.Message)"
