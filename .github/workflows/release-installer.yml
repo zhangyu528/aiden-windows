@@ -80,6 +80,45 @@ jobs:
         run: |
           & .github/scripts/prepare-package.ps1 -Version ${{ steps.version.outputs.version }}
 
+      - name: Sign published binaries
+        shell: pwsh
+        env:
+          CODE_SIGN_PFX_BASE64: ${{ secrets.CODE_SIGN_PFX_BASE64 }}
+          CODE_SIGN_PFX_PASSWORD: ${{ secrets.CODE_SIGN_PFX_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CODE_SIGN_PFX_BASE64) -or [string]::IsNullOrWhiteSpace($env:CODE_SIGN_PFX_PASSWORD)) {
+            throw "Missing code signing secrets: CODE_SIGN_PFX_BASE64 / CODE_SIGN_PFX_PASSWORD"
+          }
+
+          $signTool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $signTool) {
+            throw "signtool.exe not found on runner."
+          }
+
+          $certPath = Join-Path $env:RUNNER_TEMP "codesign.pfx"
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String($env:CODE_SIGN_PFX_BASE64))
+
+          function Invoke-SignFile([string]$filePath) {
+            if (-not (Test-Path $filePath)) {
+              throw "File not found for signing: $filePath"
+            }
+
+            & $signTool.FullName sign /fd SHA256 /f $certPath /p $env:CODE_SIGN_PFX_PASSWORD /tr "http://timestamp.digicert.com" /td SHA256 $filePath
+            if ($LASTEXITCODE -ne 0) {
+              & $signTool.FullName sign /fd SHA256 /f $certPath /p $env:CODE_SIGN_PFX_PASSWORD /tr "http://timestamp.sectigo.com" /td SHA256 $filePath
+              if ($LASTEXITCODE -ne 0) {
+                throw "signtool failed for $filePath"
+              }
+            }
+          }
+
+          Invoke-SignFile "artifacts/stage/tray/Aiden.TrayMonitor.exe"
+          Invoke-SignFile "artifacts/stage/agent/Aiden.RuntimeAgent.exe"
+
+          Remove-Item -Force $certPath -ErrorAction SilentlyContinue
+
       - name: Build Inno Setup installer
         shell: pwsh
         env:
@@ -93,6 +132,67 @@ jobs:
             "/DOutputDir=$output" `
             ".github\installer\aiden.iss"
 
+      - name: Sign installer executable
+        shell: pwsh
+        env:
+          CODE_SIGN_PFX_BASE64: ${{ secrets.CODE_SIGN_PFX_BASE64 }}
+          CODE_SIGN_PFX_PASSWORD: ${{ secrets.CODE_SIGN_PFX_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CODE_SIGN_PFX_BASE64) -or [string]::IsNullOrWhiteSpace($env:CODE_SIGN_PFX_PASSWORD)) {
+            throw "Missing code signing secrets: CODE_SIGN_PFX_BASE64 / CODE_SIGN_PFX_PASSWORD"
+          }
+
+          $signTool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $signTool) {
+            throw "signtool.exe not found on runner."
+          }
+
+          $certPath = Join-Path $env:RUNNER_TEMP "codesign.pfx"
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String($env:CODE_SIGN_PFX_BASE64))
+          $installerPath = "artifacts/installer/Aiden-Setup-${{ steps.version.outputs.version }}-win-x64.exe"
+
+          & $signTool.FullName sign /fd SHA256 /f $certPath /p $env:CODE_SIGN_PFX_PASSWORD /tr "http://timestamp.digicert.com" /td SHA256 $installerPath
+          if ($LASTEXITCODE -ne 0) {
+            & $signTool.FullName sign /fd SHA256 /f $certPath /p $env:CODE_SIGN_PFX_PASSWORD /tr "http://timestamp.sectigo.com" /td SHA256 $installerPath
+            if ($LASTEXITCODE -ne 0) {
+              throw "signtool failed for installer."
+            }
+          }
+
+          Remove-Item -Force $certPath -ErrorAction SilentlyContinue
+
+      - name: Verify signatures
+        shell: pwsh
+        run: |
+          $files = @(
+            "artifacts/stage/tray/Aiden.TrayMonitor.exe",
+            "artifacts/stage/agent/Aiden.RuntimeAgent.exe",
+            "artifacts/installer/Aiden-Setup-${{ steps.version.outputs.version }}-win-x64.exe"
+          )
+
+          foreach ($file in $files) {
+            if (-not (Test-Path $file)) {
+              throw "Missing file for signature verification: $file"
+            }
+
+            $sig = Get-AuthenticodeSignature -FilePath $file
+            if ($sig.Status -ne "Valid") {
+              throw "Invalid signature on $file. Status=$($sig.Status)"
+            }
+          }
+
+      - name: Generate SHA256SUMS
+        shell: pwsh
+        run: |
+          $installer = "artifacts/installer/Aiden-Setup-${{ steps.version.outputs.version }}-win-x64.exe"
+          if (-not (Test-Path $installer)) {
+            throw "Installer not found: $installer"
+          }
+          $hash = (Get-FileHash -Algorithm SHA256 -Path $installer).Hash.ToLowerInvariant()
+          "$hash  $(Split-Path -Leaf $installer)" | Out-File -FilePath "artifacts/installer/SHA256SUMS.txt" -Encoding ascii
+
       - name: Upload installer asset
         uses: actions/upload-release-asset@v1
         with:
@@ -100,3 +200,11 @@ jobs:
           asset_path: artifacts/installer/Aiden-Setup-${{ steps.version.outputs.version }}-win-x64.exe
           asset_name: Aiden-Setup-${{ steps.version.outputs.version }}-win-x64.exe
           asset_content_type: application/octet-stream
+
+      - name: Upload SHA256SUMS asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: artifacts/installer/SHA256SUMS.txt
+          asset_name: SHA256SUMS.txt
+          asset_content_type: text/plain

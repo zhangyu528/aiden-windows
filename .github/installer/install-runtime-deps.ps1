@@ -2,7 +2,9 @@ param(
     [Parameter(Mandatory = $false)]
     [string]$InstallDir = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
     [Parameter(Mandatory = $false)]
-    [switch]$Force
+    [switch]$Force,
+    [Parameter(Mandatory = $false)]
+    [switch]$AllowInsecureFallback
 )
 
 $ErrorActionPreference = 'Stop'
@@ -58,8 +60,7 @@ function Invoke-Download([string]$url, [string]$destination) {
 
 function Verify-Sha256([string]$file, [string]$expected) {
     if ([string]::IsNullOrWhiteSpace($expected)) {
-        Write-Warning "Skipping SHA256 verification for $file"
-        return
+        throw "Missing expected SHA256 for $file"
     }
     $actualHash = (Get-FileHash -Algorithm SHA256 -Path $file).Hash.ToLowerInvariant()
     if ($actualHash -ne $expected.ToLowerInvariant()) {
@@ -129,9 +130,14 @@ function Install-Vm {
                 Resolve-Sha256FromReleaseAssets -repo "VictoriaMetrics/VictoriaMetrics" -version $vmSpec.Version -archiveFileName $vmArchiveName
             }
             catch {
-                Write-Log "[VM] unable to resolve sha256 from checksums, continue without hash verification: $($_.Exception.Message)"
-                Write-Warning "Unable to resolve VM SHA256 from release checksums. Continuing without hash verification. Details: $($_.Exception.Message)"
-                ""
+                if ($AllowInsecureFallback.IsPresent) {
+                    Write-Log "[VM] unable to resolve sha256 from checksums, continue without hash verification due to AllowInsecureFallback: $($_.Exception.Message)"
+                    Write-Warning "Unable to resolve VM SHA256 from release checksums. Continuing without hash verification because -AllowInsecureFallback is set. Details: $($_.Exception.Message)"
+                    ""
+                }
+                else {
+                    throw "Unable to resolve VM SHA256 from release checksums. Details: $($_.Exception.Message)"
+                }
             }
         }
         else {
@@ -140,13 +146,8 @@ function Install-Vm {
         Write-Log "[VM] expected sha256: $expectedVmSha"
         Write-Log "[VM] download start"
         Invoke-Download -url $vmSpec.DownloadUrl -destination $archive
-        if (-not [string]::IsNullOrWhiteSpace($expectedVmSha)) {
-            Verify-Sha256 -file $archive -expected $expectedVmSha
-            Write-Log "[VM] sha256 verified"
-        }
-        else {
-            Write-Log "[VM] sha256 verification skipped"
-        }
+        Verify-Sha256 -file $archive -expected $expectedVmSha
+        Write-Log "[VM] sha256 verified"
         Expand-Archive -Path $archive -DestinationPath $extractDir -Force
         Write-Log "[VM] archive extracted"
         $found = Get-ChildItem -Recurse -Path $extractDir -Filter $vmSpec.ExecutablePattern | Select-Object -First 1
@@ -188,9 +189,14 @@ function Install-Collector {
                 Resolve-Sha256FromReleaseAssets -repo "open-telemetry/opentelemetry-collector-releases" -version $collectorSpec.Version -archiveFileName $archiveName
             }
             catch {
-                Write-Log "[OTEL] unable to resolve sha256 from checksums, continue without hash verification: $($_.Exception.Message)"
-                Write-Warning "Unable to resolve OTel SHA256 from release checksums. Continuing without hash verification. Details: $($_.Exception.Message)"
-                ""
+                if ($AllowInsecureFallback.IsPresent) {
+                    Write-Log "[OTEL] unable to resolve sha256 from checksums, continue without hash verification due to AllowInsecureFallback: $($_.Exception.Message)"
+                    Write-Warning "Unable to resolve OTel SHA256 from release checksums. Continuing without hash verification because -AllowInsecureFallback is set. Details: $($_.Exception.Message)"
+                    ""
+                }
+                else {
+                    throw "Unable to resolve OTel SHA256 from release checksums. Details: $($_.Exception.Message)"
+                }
             }
         }
         else {
@@ -199,13 +205,8 @@ function Install-Collector {
         Write-Log "[OTEL] expected sha256: $expectedCollectorSha"
         Write-Log "[OTEL] download start"
         Invoke-Download -url $collectorSpec.DownloadUrl -destination $archive
-        if (-not [string]::IsNullOrWhiteSpace($expectedCollectorSha)) {
-            Verify-Sha256 -file $archive -expected $expectedCollectorSha
-            Write-Log "[OTEL] sha256 verified"
-        }
-        else {
-            Write-Log "[OTEL] sha256 verification skipped"
-        }
+        Verify-Sha256 -file $archive -expected $expectedCollectorSha
+        Write-Log "[OTEL] sha256 verified"
         Ensure-Directory $extractDir
         if ($collectorSpec.ArchiveType -eq 'zip') {
             Expand-Archive -Path $archive -DestinationPath $extractDir -Force
