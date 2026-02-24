@@ -6,7 +6,7 @@ Security fixes are provided for the latest `main` branch and the latest release 
 
 ## Reporting a Vulnerability
 
-Please report vulnerabilities privately to: `security@aiden.local`
+Please report vulnerabilities privately to: `zhangyu528@163.com`
 
 Include:
 
