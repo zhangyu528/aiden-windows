@@ -1,6 +1,6 @@
 # Code Signing Policy
 
-This project signs Windows release artifacts to provide publisher identity and tamper evidence.
+This project signs Windows release artifacts via SignPath to provide publisher identity and tamper evidence.
 
 ## Scope
 
@@ -16,6 +16,7 @@ Signing runs only in the GitHub Actions release workflow:
 
 - Workflow: `.github/workflows/release-installer.yml`
 - Trigger: `release` with type `published`
+- Provider: SignPath signing request pipeline
 
 No signing is performed for pull requests or arbitrary branch pushes.
 

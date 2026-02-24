@@ -92,7 +92,7 @@ Notes:
 
 ## Release Signature and Integrity Verification
 
-Release artifacts are signed by the project release workflow.
+Release artifacts are signed by the project release workflow via SignPath.
 
 - `Aiden.TrayMonitor.exe`
 - `Aiden.RuntimeAgent.exe`
