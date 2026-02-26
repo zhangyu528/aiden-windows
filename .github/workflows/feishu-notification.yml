@@ -22,7 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Feishu
-        uses: vscat/feishu-notification@v1
+        uses: whatwewant/action-robot-feishu@v0.0.12
         with:
-          webhook: ${{ secrets.FEISHU_WEBHOOK }}
-          secret: ${{ secrets.FEISHU_SECRET }}
+          url: ${{ secrets.FEISHU_WEBHOOK }}
