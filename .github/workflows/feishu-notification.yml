@@ -1,11 +1,16 @@
 name: Feishu Notification
 
 on:
+  workflow_dispatch:
   push:
   pull_request:
+    types: [opened, synchronize, reopened, closed, ready_for_review]
   release:
+    types: [published, prereleased, released]
   issues:
+    types: [opened, edited, reopened, closed]
   issue_comment:
+    types: [created, edited]
   watch:
     types: [started]
   fork:
@@ -17,11 +22,111 @@ on:
     workflows: ["Build Release Installer"]
     types: [completed]
 
+permissions:
+  contents: read
+
 jobs:
   notify:
     runs-on: ubuntu-latest
+    timeout-minutes: 3
+    concurrency:
+      group: feishu-notify-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
-      - name: Notify Feishu
-        uses: whatwewant/action-robot-feishu@v0.0.12
-        with:
-          url: ${{ secrets.FEISHU_WEBHOOK }}
+      - name: Build payload
+        id: payload
+        shell: bash
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          REF_NAME: ${{ github.ref_name }}
+          CURRENT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          SOURCE_RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${FEISHU_WEBHOOK:-}" ]; then
+            echo "::warning::FEISHU_WEBHOOK is not configured; skip notification."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          status="triggered"
+          run_url="${CURRENT_RUN_URL}"
+          if [ "${EVENT_NAME}" = "workflow_run" ]; then
+            status="${WORKFLOW_CONCLUSION:-completed}"
+            run_url="${SOURCE_RUN_URL:-$CURRENT_RUN_URL}"
+          fi
+
+          ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          if [ -n "${WORKFLOW_NAME}" ]; then
+            workflow_line="workflow=${WORKFLOW_NAME}"
+          else
+            workflow_line="workflow=${{ github.workflow }}"
+          fi
+
+          message="$(printf '%s\n' \
+            'Aiden Windows notification' \
+            "repo=${REPOSITORY}" \
+            "event=${EVENT_NAME}" \
+            "status=${status}" \
+            "actor=${ACTOR}" \
+            "ref=${REF_NAME}" \
+            "${workflow_line}" \
+            "run_url=${run_url}" \
+            "timestamp=${ts}")"
+
+          export MESSAGE="$message"
+          python -c "import json,os;json.dump({'msg_type':'text','content':{'text':os.environ.get('MESSAGE','')}},open('payload.json','w',encoding='utf-8'),ensure_ascii=False)"
+
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "run_url=$run_url" >> "$GITHUB_OUTPUT"
+          echo "skipped=false" >> "$GITHUB_OUTPUT"
+          echo "summary=event=${EVENT_NAME}, status=${status}, run_url=${run_url}" >> "$GITHUB_OUTPUT"
+          echo "::notice::${EVENT_NAME} | ${status} | ${run_url}"
+
+      - name: Send to Feishu
+        if: steps.payload.outputs.skipped != 'true'
+        shell: bash
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          FAIL_ON_ERROR: ${{ vars.FEISHU_NOTIFY_FAIL_ON_ERROR }}
+        run: |
+          set -euo pipefail
+          FAIL_ON_ERROR="${FAIL_ON_ERROR:-false}"
+
+          http_code="$(curl -sS -o feishu-response.json -w "%{http_code}" \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            --max-time 20 \
+            -H 'Content-Type: application/json' \
+            -d @payload.json \
+            "${FEISHU_WEBHOOK}")"
+
+          fail() {
+            local msg="$1"
+            if [ "${FAIL_ON_ERROR}" = "true" ]; then
+              echo "::error::${msg}"
+              exit 1
+            fi
+            echo "::warning::${msg}"
+          }
+
+          if [ "${http_code}" -lt 200 ] || [ "${http_code}" -ge 300 ]; then
+            fail "Feishu webhook returned HTTP ${http_code}"
+            exit 0
+          fi
+
+          api_code="$(grep -oE '"code"[[:space:]]*:[[:space:]]*-?[0-9]+' feishu-response.json | head -n 1 | sed -E 's/.*:[[:space:]]*(-?[0-9]+).*/\1/' || true)"
+
+          if [ -n "${api_code}" ] && [ "${api_code}" != "0" ]; then
+            fail "Feishu API returned non-zero code: ${api_code}"
+            exit 0
+          fi
+
+          echo "::notice::Feishu notification delivered successfully."
