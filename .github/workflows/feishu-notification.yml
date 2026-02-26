@@ -1,0 +1,28 @@
+name: Feishu Notification
+
+on:
+  push:
+  pull_request:
+  release:
+  issues:
+  issue_comment:
+  watch:
+    types: [started]
+  fork:
+  gollum:
+  project:
+  milestone:
+    types: [created, closed]
+  workflow_run:
+    workflows: ["Build Release Installer"]
+    types: [completed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Feishu
+        uses: vscat/feishu-notification@v1
+        with:
+          webhook: ${{ secrets.FEISHU_WEBHOOK }}
+          secret: ${{ secrets.FEISHU_SECRET }}
