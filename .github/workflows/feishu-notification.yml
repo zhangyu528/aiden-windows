@@ -64,20 +64,30 @@ jobs:
 
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           if [ -n "${WORKFLOW_NAME}" ]; then
-            workflow_line="workflow=${WORKFLOW_NAME}"
+            workflow_display="${WORKFLOW_NAME}"
           else
-            workflow_line="workflow=${{ github.workflow }}"
+            workflow_display="${{ github.workflow }}"
           fi
 
           export STATUS="$status"
           export RUN_URL="$run_url"
-          export WORKFLOW_LINE="$workflow_line"
+          export WORKFLOW_DISPLAY="$workflow_display"
           export TS="$ts"
           python - <<'PY'
           import json
           import os
 
           status = os.environ.get("STATUS", "triggered")
+          status_map = {
+              "success": "Success",
+              "failure": "Failure",
+              "cancelled": "Cancelled",
+              "timed_out": "Timed Out",
+              "action_required": "Action Required",
+              "triggered": "Triggered",
+              "completed": "Completed",
+          }
+          status_text = status_map.get(status, status)
           color = "green" if status == "success" else (
               "red" if status in ("failure", "cancelled", "timed_out", "action_required") else "blue"
           )
@@ -94,12 +104,12 @@ jobs:
                       {
                           "tag": "div",
                           "fields": [
-                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Repo**\\n" + os.environ.get("REPOSITORY", "")}},
-                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Event**\\n" + os.environ.get("EVENT_NAME", "")}},
-                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Status**\\n" + status}},
-                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Actor**\\n" + os.environ.get("ACTOR", "")}},
-                              {"is_short": False, "text": {"tag": "lark_md", "content": "**Ref**\\n" + os.environ.get("REF_NAME", "")}},
-                              {"is_short": False, "text": {"tag": "lark_md", "content": "**Workflow**\\n" + os.environ.get("WORKFLOW_LINE", "")}},
+                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Repository**\n" + os.environ.get("REPOSITORY", "")}},
+                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Event**\n" + os.environ.get("EVENT_NAME", "")}},
+                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Status**\n" + status_text}},
+                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Actor**\n" + os.environ.get("ACTOR", "")}},
+                              {"is_short": False, "text": {"tag": "lark_md", "content": "**Ref**\n" + os.environ.get("REF_NAME", "")}},
+                              {"is_short": False, "text": {"tag": "lark_md", "content": "**Workflow**\n" + os.environ.get("WORKFLOW_DISPLAY", "")}},
                           ],
                       },
                       {
@@ -116,7 +126,7 @@ jobs:
                       {
                           "tag": "note",
                           "elements": [
-                              {"tag": "plain_text", "content": "Timestamp: " + os.environ.get("TS", "")}
+                              {"tag": "plain_text", "content": "Timestamp (UTC): " + os.environ.get("TS", "")}
                           ],
                       },
                   ],
