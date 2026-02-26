@@ -69,19 +69,63 @@ jobs:
             workflow_line="workflow=${{ github.workflow }}"
           fi
 
-          message="$(printf '%s\n' \
-            'Aiden Windows notification' \
-            "repo=${REPOSITORY}" \
-            "event=${EVENT_NAME}" \
-            "status=${status}" \
-            "actor=${ACTOR}" \
-            "ref=${REF_NAME}" \
-            "${workflow_line}" \
-            "run_url=${run_url}" \
-            "timestamp=${ts}")"
+          export STATUS="$status"
+          export RUN_URL="$run_url"
+          export WORKFLOW_LINE="$workflow_line"
+          export TS="$ts"
+          python - <<'PY'
+          import json
+          import os
 
-          export MESSAGE="$message"
-          python -c "import json,os;json.dump({'msg_type':'text','content':{'text':os.environ.get('MESSAGE','')}},open('payload.json','w',encoding='utf-8'),ensure_ascii=False)"
+          status = os.environ.get("STATUS", "triggered")
+          color = "green" if status == "success" else (
+              "red" if status in ("failure", "cancelled", "timed_out", "action_required") else "blue"
+          )
+
+          payload = {
+              "msg_type": "interactive",
+              "card": {
+                  "config": {"wide_screen_mode": True, "enable_forward": True},
+                  "header": {
+                      "template": color,
+                      "title": {"tag": "plain_text", "content": "Aiden Windows Notification"},
+                  },
+                  "elements": [
+                      {
+                          "tag": "div",
+                          "fields": [
+                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Repo**\\n" + os.environ.get("REPOSITORY", "")}},
+                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Event**\\n" + os.environ.get("EVENT_NAME", "")}},
+                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Status**\\n" + status}},
+                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Actor**\\n" + os.environ.get("ACTOR", "")}},
+                              {"is_short": False, "text": {"tag": "lark_md", "content": "**Ref**\\n" + os.environ.get("REF_NAME", "")}},
+                              {"is_short": False, "text": {"tag": "lark_md", "content": "**Workflow**\\n" + os.environ.get("WORKFLOW_LINE", "")}},
+                          ],
+                      },
+                      {
+                          "tag": "action",
+                          "actions": [
+                              {
+                                  "tag": "button",
+                                  "text": {"tag": "plain_text", "content": "Open Run"},
+                                  "type": "primary",
+                                  "url": os.environ.get("RUN_URL", ""),
+                              }
+                          ],
+                      },
+                      {
+                          "tag": "note",
+                          "elements": [
+                              {"tag": "plain_text", "content": "Timestamp: " + os.environ.get("TS", "")}
+                          ],
+                      },
+                  ],
+              },
+          }
+
+          with open("payload.json", "w", encoding="utf-8") as f:
+              json.dump(payload, f, ensure_ascii=False)
+          PY
 
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "run_url=$run_url" >> "$GITHUB_OUTPUT"
