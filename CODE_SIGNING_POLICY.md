@@ -20,6 +20,18 @@ Signing runs only in the GitHub Actions release workflow:
 
 No signing is performed for pull requests or arbitrary branch pushes.
 
+## SignPath Onboarding Requirements
+
+Set the following GitHub repository variables before enabling release signing (`SIGNPATH_READY=true`):
+
+- `SIGNPATH_ORGANIZATION_ID`
+- `SIGNPATH_PROJECT_SLUG`
+- `SIGNPATH_SIGNING_POLICY_SLUG`
+- `SIGNPATH_UNSIGNED_ARTIFACT_CFG`
+- `SIGNPATH_INSTALLER_ARTIFACT_CFG`
+
+The release workflow enforces these values in the readiness gate and fails fast when any required variable is missing.
+
 ## Verification Requirements
 
 Release workflow must fail if any signature is not valid.
