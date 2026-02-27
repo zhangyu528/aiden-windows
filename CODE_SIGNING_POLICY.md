@@ -12,17 +12,19 @@ The following files are signed for release builds:
 
 ## Signing Trigger
 
-Signing runs only in the GitHub Actions release workflow:
+Signing runs only in the GitHub Actions pre-release workflow:
 
-- Workflow: `.github/workflows/release-installer.yml`
-- Trigger: `release` with type `published`
+- Workflow: `.github/workflows/prerelease.yml`
+- Trigger: `workflow_dispatch` with inputs `base_version` and `channel` (`alpha`/`beta`/`rc`)
 - Provider: SignPath signing request pipeline
+
+Final release publication is done by promoting a validated pre-release in GitHub (turning off the prerelease flag) without rebuilding signed artifacts.
 
 No signing is performed for pull requests or arbitrary branch pushes.
 
 ## SignPath Onboarding Requirements
 
-Set the following GitHub repository variables before enabling release signing (`SIGNPATH_READY=true`):
+Set the following GitHub repository variables before enabling signing (`SIGNPATH_READY=true`):
 
 - `SIGNPATH_ORGANIZATION_ID`
 - `SIGNPATH_PROJECT_SLUG`
@@ -30,7 +32,7 @@ Set the following GitHub repository variables before enabling release signing (`
 - `SIGNPATH_UNSIGNED_ARTIFACT_CFG`
 - `SIGNPATH_INSTALLER_ARTIFACT_CFG`
 
-The release workflow enforces these values in the readiness gate and fails fast when any required variable is missing.
+The pre-release workflow enforces these values in the readiness gate and fails fast when any required variable is missing.
 
 ## Verification Requirements
 

@@ -19,7 +19,7 @@ on:
   milestone:
     types: [created, closed]
   workflow_run:
-    workflows: ["Build Release Installer"]
+    workflows: ["Create Pre-release"]
     types: [completed]
 
 permissions:
