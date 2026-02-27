@@ -1,23 +1,6 @@
 name: Feishu Notification
 
 on:
-  workflow_dispatch:
-  push:
-  pull_request:
-    types: [opened, synchronize, reopened, closed, ready_for_review]
-  release:
-    types: [published, prereleased, released]
-  issues:
-    types: [opened, edited, reopened, closed]
-  issue_comment:
-    types: [created, edited]
-  watch:
-    types: [started]
-  fork:
-  gollum:
-  project:
-  milestone:
-    types: [created, closed]
   workflow_run:
     workflows: ["Create Pre-release"]
     types: [completed]
@@ -46,102 +29,7 @@ jobs:
           WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
           SOURCE_RUN_URL: ${{ github.event.workflow_run.html_url }}
-        run: |
-          set -euo pipefail
-
-          if [ -z "${FEISHU_WEBHOOK:-}" ]; then
-            echo "::warning::FEISHU_WEBHOOK is not configured; skip notification."
-            echo "skipped=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          status="triggered"
-          run_url="${CURRENT_RUN_URL}"
-          if [ "${EVENT_NAME}" = "workflow_run" ]; then
-            status="${WORKFLOW_CONCLUSION:-completed}"
-            run_url="${SOURCE_RUN_URL:-$CURRENT_RUN_URL}"
-          fi
-
-          ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          if [ -n "${WORKFLOW_NAME}" ]; then
-            workflow_display="${WORKFLOW_NAME}"
-          else
-            workflow_display="${{ github.workflow }}"
-          fi
-
-          export STATUS="$status"
-          export RUN_URL="$run_url"
-          export WORKFLOW_DISPLAY="$workflow_display"
-          export TS="$ts"
-          python - <<'PY'
-          import json
-          import os
-
-          status = os.environ.get("STATUS", "triggered")
-          status_map = {
-              "success": "Success",
-              "failure": "Failure",
-              "cancelled": "Cancelled",
-              "timed_out": "Timed Out",
-              "action_required": "Action Required",
-              "triggered": "Triggered",
-              "completed": "Completed",
-          }
-          status_text = status_map.get(status, status)
-          color = "green" if status == "success" else (
-              "red" if status in ("failure", "cancelled", "timed_out", "action_required") else "blue"
-          )
-
-          payload = {
-              "msg_type": "interactive",
-              "card": {
-                  "config": {"wide_screen_mode": True, "enable_forward": True},
-                  "header": {
-                      "template": color,
-                      "title": {"tag": "plain_text", "content": "Aiden Windows Notification"},
-                  },
-                  "elements": [
-                      {
-                          "tag": "div",
-                          "fields": [
-                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Repository**\n" + os.environ.get("REPOSITORY", "")}},
-                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Event**\n" + os.environ.get("EVENT_NAME", "")}},
-                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Status**\n" + status_text}},
-                              {"is_short": True, "text": {"tag": "lark_md", "content": "**Actor**\n" + os.environ.get("ACTOR", "")}},
-                              {"is_short": False, "text": {"tag": "lark_md", "content": "**Ref**\n" + os.environ.get("REF_NAME", "")}},
-                              {"is_short": False, "text": {"tag": "lark_md", "content": "**Workflow**\n" + os.environ.get("WORKFLOW_DISPLAY", "")}},
-                          ],
-                      },
-                      {
-                          "tag": "action",
-                          "actions": [
-                              {
-                                  "tag": "button",
-                                  "text": {"tag": "plain_text", "content": "Open Run"},
-                                  "type": "primary",
-                                  "url": os.environ.get("RUN_URL", ""),
-                              }
-                          ],
-                      },
-                      {
-                          "tag": "note",
-                          "elements": [
-                              {"tag": "plain_text", "content": "Timestamp (UTC): " + os.environ.get("TS", "")}
-                          ],
-                      },
-                  ],
-              },
-          }
-
-          with open("payload.json", "w", encoding="utf-8") as f:
-              json.dump(payload, f, ensure_ascii=False)
-          PY
-
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          echo "run_url=$run_url" >> "$GITHUB_OUTPUT"
-          echo "skipped=false" >> "$GITHUB_OUTPUT"
-          echo "summary=event=${EVENT_NAME}, status=${status}, run_url=${run_url}" >> "$GITHUB_OUTPUT"
-          echo "::notice::${EVENT_NAME} | ${status} | ${run_url}"
+        run: bash .github/scripts/build-feishu-payload.sh
 
       - name: Send to Feishu
         if: steps.payload.outputs.skipped != 'true'
@@ -149,38 +37,4 @@ jobs:
         env:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           FAIL_ON_ERROR: ${{ vars.FEISHU_NOTIFY_FAIL_ON_ERROR }}
-        run: |
-          set -euo pipefail
-          FAIL_ON_ERROR="${FAIL_ON_ERROR:-false}"
-
-          http_code="$(curl -sS -o feishu-response.json -w "%{http_code}" \
-            --retry 3 \
-            --retry-delay 2 \
-            --retry-all-errors \
-            --max-time 20 \
-            -H 'Content-Type: application/json' \
-            -d @payload.json \
-            "${FEISHU_WEBHOOK}")"
-
-          fail() {
-            local msg="$1"
-            if [ "${FAIL_ON_ERROR}" = "true" ]; then
-              echo "::error::${msg}"
-              exit 1
-            fi
-            echo "::warning::${msg}"
-          }
-
-          if [ "${http_code}" -lt 200 ] || [ "${http_code}" -ge 300 ]; then
-            fail "Feishu webhook returned HTTP ${http_code}"
-            exit 0
-          fi
-
-          api_code="$(grep -oE '"code"[[:space:]]*:[[:space:]]*-?[0-9]+' feishu-response.json | head -n 1 | sed -E 's/.*:[[:space:]]*(-?[0-9]+).*/\1/' || true)"
-
-          if [ -n "${api_code}" ] && [ "${api_code}" != "0" ]; then
-            fail "Feishu API returned non-zero code: ${api_code}"
-            exit 0
-          fi
-
-          echo "::notice::Feishu notification delivered successfully."
+        run: bash .github/scripts/send-feishu-notification.sh
