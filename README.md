@@ -2,7 +2,7 @@
 
 ![Platform](https://img.shields.io/badge/platform-Windows_10%20%7C%2011-blue)
 ![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
-[![Build Release Installer](https://github.com/zhangyu528/aiden-windows/actions/workflows/release-installer.yml/badge.svg)](https://github.com/zhangyu528/aiden-windows/actions/workflows/release-installer.yml)
+[![Create Pre-release](https://github.com/zhangyu528/aiden-windows/actions/workflows/prerelease.yml/badge.svg)](https://github.com/zhangyu528/aiden-windows/actions/workflows/prerelease.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/zhangyu528/aiden-windows)](https://github.com/zhangyu528/aiden-windows/releases/latest)
 ![Code Signed](https://img.shields.io/badge/Code_Signed-SignPath-success?logo=checkmarx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -121,5 +121,25 @@ Get-FileHash -Algorithm SHA256 .\Aiden-Setup-<version>-win-x64.exe
 ```
 
 Compare the output hash with the corresponding line in `SHA256SUMS.txt`.
+
+## Pre-release Publishing
+
+Use GitHub Actions workflow `.github/workflows/prerelease.yml` to create pre-releases.
+
+Inputs:
+- `base_version`: must be `vMAJOR.MINOR.PATCH` (example: `v0.1.0`)
+- `channel`: choose `alpha`, `beta`, or `rc`
+
+Behavior:
+- Tag source is fixed to `main`.
+- Workflow auto-increments channel sequence per base version:
+  - `v0.1.0 + alpha` => `v0.1.0-alpha.1`, then `v0.1.0-alpha.2`, etc.
+  - `v0.1.0 + beta` => `v0.1.0-beta.1`, then `v0.1.0-beta.2`, etc.
+  - `v0.1.0 + rc` => `v0.1.0-rc.1`, then `v0.1.0-rc.2`, etc.
+- After pre-release creation, installer build + SignPath signing + signature verification run automatically.
+- Signed installer and `SHA256SUMS.txt` are uploaded to the created pre-release assets.
+- Final release is produced by promoting the validated pre-release in GitHub UI (mark prerelease off), without rebuilding artifacts.
+
+Do not include prerelease suffixes in `base_version` input.
 
 For full policy details, see `CODE_SIGNING_POLICY.md`.
