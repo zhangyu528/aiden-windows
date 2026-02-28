@@ -2,6 +2,7 @@
 
 ![Platform](https://img.shields.io/badge/platform-Windows_10%20%7C%2011-blue)
 ![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
+[![PR Tests](https://github.com/zhangyu528/aiden-windows/actions/workflows/tests-pr.yml/badge.svg?branch=main)](https://github.com/zhangyu528/aiden-windows/actions/workflows/tests-pr.yml)
 [![Create Pre-release](https://github.com/zhangyu528/aiden-windows/actions/workflows/prerelease.yml/badge.svg)](https://github.com/zhangyu528/aiden-windows/actions/workflows/prerelease.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/zhangyu528/aiden-windows)](https://github.com/zhangyu528/aiden-windows/releases/latest)
 ![Code Signed](https://img.shields.io/badge/Code_Signed-SignPath-success?logo=checkmarx)
