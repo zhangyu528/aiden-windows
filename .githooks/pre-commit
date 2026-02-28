@@ -1,4 +1,7 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env powershell
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
 
-powershell -ExecutionPolicy Bypass -NoLogo -NoProfile -File "scripts/precommit-gate.ps1"
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
+& powershell -ExecutionPolicy Bypass -NoLogo -NoProfile -File (Join-Path $repoRoot 'scripts\precommit-gate.ps1')
+exit $LASTEXITCODE
