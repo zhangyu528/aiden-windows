@@ -1,0 +1,82 @@
+name: Nightly Tests
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-nightly
+  cancel-in-progress: false
+
+jobs:
+  dotnet-tests:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore solution
+        run: dotnet restore Aiden.sln
+
+      - name: Run unit and integration tests
+        run: |
+          dotnet test tests/Aiden.RuntimeAgent.UnitTests/Aiden.RuntimeAgent.UnitTests.csproj -c Release --no-restore --collect:"XPlat Code Coverage"
+          dotnet test tests/Aiden.TrayMonitor.UnitTests/Aiden.TrayMonitor.UnitTests.csproj -c Release --no-restore --collect:"XPlat Code Coverage"
+          dotnet test tests/Aiden.IntegrationTests/Aiden.IntegrationTests.csproj -c Release --no-restore --collect:"XPlat Code Coverage"
+
+  ui-tests:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore solution
+        run: dotnet restore Aiden.sln
+
+      - name: Build tray app for UI smoke
+        run: |
+          dotnet publish Aiden.TrayMonitor/Aiden.TrayMonitor.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained false `
+            -o artifacts/ui-test/tray
+
+      - name: Run UI tests
+        env:
+          AIDEN_UI_APP_PATH: ${{ github.workspace }}\artifacts\ui-test\tray\Aiden.TrayMonitor.exe
+        run: dotnet test tests/Aiden.UI.Tests/Aiden.UI.Tests.csproj -c Release --no-restore
+
+  scripts-tests:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          $installed = Get-Module -ListAvailable -Name Pester | Sort-Object Version -Descending | Select-Object -First 1
+          if (-not $installed -or $installed.Version.Major -lt 5) {
+            Install-Module Pester -Scope CurrentUser -MinimumVersion 5.0.0 -Force -SkipPublisherCheck
+          }
+
+      - name: Run scripts tests
+        shell: pwsh
+        run: |
+          Import-Module Pester -MinimumVersion 5.0.0 -Force
+          Invoke-Pester -Path tests/Aiden.Scripts.Tests -CI

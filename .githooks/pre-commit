@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+powershell -ExecutionPolicy Bypass -NoLogo -NoProfile -File "scripts/precommit-gate.ps1"
