@@ -1,11 +1,11 @@
-﻿# Aiden Tray Monitor (MVP)
+# Aiden Tray Monitor (MVP)
 
 ## Prerequisites
 - Windows 10/11
 - .NET 8 SDK
 
 ## Run
-```powershell
+```pwsh
 cd Aiden.TrayMonitor
 dotnet restore
 dotnet run
@@ -123,3 +123,4 @@ Cost rule:
 - Formula:
   `costUsd = sum(inputTokens/1_000_000 * inputRatePerMillion + outputTokens/1_000_000 * outputRatePerMillion)`
 - Unknown model rates use `Pricing.DefaultInputPerMillionUsd` / `Pricing.DefaultOutputPerMillionUsd`.
+

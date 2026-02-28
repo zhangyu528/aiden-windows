@@ -40,7 +40,7 @@ Release workflow must fail if any signature is not valid.
 
 Local verification example:
 
-```powershell
+```pwsh
 Get-AuthenticodeSignature .\Aiden-Setup-0.2.0-win-x64.exe | Format-List Status,SignerCertificate,TimeStamperCertificate
 ```
 
@@ -60,3 +60,4 @@ Consumers should verify both:
 Installer runtime dependency downloads (VictoriaMetrics and OpenTelemetry Collector) require SHA256 verification.
 
 If checksum resolution or verification fails, installation fails by default.
+
