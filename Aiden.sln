@@ -7,6 +7,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aiden.RuntimeAgent", "Aiden
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aiden.TrayMonitor", "Aiden.TrayMonitor\Aiden.TrayMonitor.csproj", "{7F2606E1-0FAB-4ADF-ABE6-617908427ACD}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{CA54488C-0DE1-4E7D-9B1E-1C81EB871BAE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aiden.RuntimeAgent.UnitTests", "tests\Aiden.RuntimeAgent.UnitTests\Aiden.RuntimeAgent.UnitTests.csproj", "{B2D2943A-3F5A-4FAF-88FF-3012C5F3D692}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aiden.TrayMonitor.UnitTests", "tests\Aiden.TrayMonitor.UnitTests\Aiden.TrayMonitor.UnitTests.csproj", "{09F76BF7-2175-4223-A3AA-DCBB6D35A63C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aiden.IntegrationTests", "tests\Aiden.IntegrationTests\Aiden.IntegrationTests.csproj", "{923A0CCA-AC85-45B2-BC74-4AB2A87CFCF6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aiden.UI.Tests", "tests\Aiden.UI.Tests\Aiden.UI.Tests.csproj", "{FFDBEDA3-4581-408B-9274-3E946AB8689D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +34,27 @@ Global
 		{7F2606E1-0FAB-4ADF-ABE6-617908427ACD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F2606E1-0FAB-4ADF-ABE6-617908427ACD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F2606E1-0FAB-4ADF-ABE6-617908427ACD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2D2943A-3F5A-4FAF-88FF-3012C5F3D692}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2D2943A-3F5A-4FAF-88FF-3012C5F3D692}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2D2943A-3F5A-4FAF-88FF-3012C5F3D692}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2D2943A-3F5A-4FAF-88FF-3012C5F3D692}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09F76BF7-2175-4223-A3AA-DCBB6D35A63C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09F76BF7-2175-4223-A3AA-DCBB6D35A63C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09F76BF7-2175-4223-A3AA-DCBB6D35A63C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09F76BF7-2175-4223-A3AA-DCBB6D35A63C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{923A0CCA-AC85-45B2-BC74-4AB2A87CFCF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{923A0CCA-AC85-45B2-BC74-4AB2A87CFCF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{923A0CCA-AC85-45B2-BC74-4AB2A87CFCF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{923A0CCA-AC85-45B2-BC74-4AB2A87CFCF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFDBEDA3-4581-408B-9274-3E946AB8689D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFDBEDA3-4581-408B-9274-3E946AB8689D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFDBEDA3-4581-408B-9274-3E946AB8689D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFDBEDA3-4581-408B-9274-3E946AB8689D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B2D2943A-3F5A-4FAF-88FF-3012C5F3D692} = {CA54488C-0DE1-4E7D-9B1E-1C81EB871BAE}
+		{09F76BF7-2175-4223-A3AA-DCBB6D35A63C} = {CA54488C-0DE1-4E7D-9B1E-1C81EB871BAE}
+		{923A0CCA-AC85-45B2-BC74-4AB2A87CFCF6} = {CA54488C-0DE1-4E7D-9B1E-1C81EB871BAE}
+		{FFDBEDA3-4581-408B-9274-3E946AB8689D} = {CA54488C-0DE1-4E7D-9B1E-1C81EB871BAE}
 	EndGlobalSection
 EndGlobal

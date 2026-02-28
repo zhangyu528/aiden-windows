@@ -97,6 +97,49 @@ Notes:
   `deltatocumulative` + `metricstarttime` processors.
 - Query visibility in VictoriaMetrics may lag by about 20-30 seconds after ingest.
 
+## Automated Tests
+
+Test suites:
+- `tests/Aiden.RuntimeAgent.UnitTests`
+- `tests/Aiden.TrayMonitor.UnitTests`
+- `tests/Aiden.IntegrationTests`
+- `tests/Aiden.UI.Tests`
+- `tests/Aiden.Scripts.Tests` (Pester)
+
+Run locally:
+
+```powershell
+dotnet test tests/Aiden.RuntimeAgent.UnitTests/Aiden.RuntimeAgent.UnitTests.csproj
+dotnet test tests/Aiden.TrayMonitor.UnitTests/Aiden.TrayMonitor.UnitTests.csproj
+dotnet test tests/Aiden.IntegrationTests/Aiden.IntegrationTests.csproj
+dotnet test tests/Aiden.UI.Tests/Aiden.UI.Tests.csproj
+pwsh -Command "Invoke-Pester -Path tests/Aiden.Scripts.Tests -CI"
+```
+
+CI:
+- PR quick gate: `.github/workflows/tests-pr.yml`
+- Nightly full suite: `.github/workflows/tests-nightly.yml`
+
+Pre-commit gate:
+- Enable repo-managed hooks:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-githooks.ps1
+```
+
+- Hook entrypoint: `.githooks/pre-commit`
+- Gate script: `scripts/precommit-gate.ps1`
+- Fast checks run on staged changes only:
+  - impacted project build + unit tests
+  - script tests via Pester
+- Pre-commit script tests require Pester v5.
+  Install/update locally:
+
+```powershell
+Install-Module Pester -Scope CurrentUser -MinimumVersion 5.0.0 -Force -SkipPublisherCheck
+Import-Module Pester -MinimumVersion 5.0.0 -Force
+```
+
 ## Release Signature and Integrity Verification
 
 Release artifacts are signed by the project release workflow via SignPath.
