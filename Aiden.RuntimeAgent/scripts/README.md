@@ -10,8 +10,8 @@ Default install location:
 
 Usage:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-vm.ps1 `
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-vm.ps1 `
   -Version "v1.113.0" `
   -DownloadUrl "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.113.0/victoria-metrics-windows-amd64-v1.113.0.zip" `
   -Sha256 "ed8f660442a45b260a2c0a0976440ecec863bb75ccb7cec6aad9580364a92de6"
@@ -33,8 +33,8 @@ Default install location:
 
 Usage:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-collector.ps1 `
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-collector.ps1 `
   -Version "v0.146.1" `
   -DownloadUrl "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol-contrib_0.146.1_windows_amd64.tar.gz" `
   -Sha256 "0eaa1ff9d0f5d8009921667368981617641cebb1766fc7b38be95d5dc21a126a"
@@ -54,8 +54,8 @@ Stop current runtime processes, install new package, refresh HKCU auto-start key
 
 Usage:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\upgrade-stop-install-start.ps1 `
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\upgrade-stop-install-start.ps1 `
   -NewPackagePath "C:\temp\aiden-new" `
   -InstallPath "C:\Users\<you>\AppData\Local\Aiden"
 ```
@@ -66,8 +66,8 @@ Stop runtime processes and clean user-level startup entry (`HKCU\...\Run\AidenRu
 
 Usage:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\uninstall-clean-agent.ps1 `
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\uninstall-clean-agent.ps1 `
   -InstallPath "C:\Users\<you>\AppData\Local\Aiden"
 ```
 
@@ -77,11 +77,12 @@ Inspect recent OTel file-exported log records and summarize field coverage, incl
 
 Usage:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\inspect-otlp-log-fields.ps1 `
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\inspect-otlp-log-fields.ps1 `
   -Tail 300
 ```
 
 Optional:
 
 - `-LogPath` to target a specific `otlp-logs.jsonl`.
+

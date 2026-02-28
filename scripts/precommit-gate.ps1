@@ -51,7 +51,7 @@ try {
 
     $runtimePrefixes = @('Aiden.RuntimeAgent/', 'tests/Aiden.RuntimeAgent.UnitTests/')
     $trayPrefixes = @('Aiden.TrayMonitor/', 'tests/Aiden.TrayMonitor.UnitTests/')
-    $scriptPrefixes = @('.github/scripts/', 'Aiden.RuntimeAgent/scripts/', 'tests/Aiden.Scripts.Tests/', '.github/workflows/', '.githooks/', 'scripts/precommit-gate.ps1', 'scripts/setup-githooks.ps1')
+    $scriptPrefixes = @('.github/scripts/', 'Aiden.RuntimeAgent/scripts/', 'tests/Aiden.Scripts.Tests/', '.github/workflows/', '.githooks/', 'scripts/precommit-gate.ps1', 'scripts/setup-githooks.ps1', 'scripts/ensure-pester-v5.ps1', 'scripts/run-script-tests.ps1')
 
     $needsRuntime = $false
     $needsTray = $false
@@ -88,13 +88,7 @@ try {
 
     if ($needsScripts) {
         Write-Host "pre-commit: pester v5 scripts tests..."
-        $installed = Get-Module -ListAvailable -Name Pester | Sort-Object Version -Descending | Select-Object -First 1
-        if (-not $installed -or $installed.Version.Major -lt 5) {
-            throw "Pester v5 is required for pre-commit. Install with: Install-Module Pester -Scope CurrentUser -MinimumVersion 5.0.0 -Force -SkipPublisherCheck"
-        }
-
-        Import-Module Pester -MinimumVersion 5.0.0 -Force
-        Invoke-Pester -Path tests/Aiden.Scripts.Tests -CI
+        & (Join-Path $repoRoot 'scripts\run-script-tests.ps1')
     }
 
     Write-Host "pre-commit: gate passed."

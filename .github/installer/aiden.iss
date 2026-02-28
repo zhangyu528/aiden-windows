@@ -46,7 +46,7 @@ Name: "{commondesktop}\Aiden Tray Monitor"; Filename: "{app}\Aiden.TrayMonitor.e
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "AidenRuntimeAgent"; ValueData: """{app}\Aiden.RuntimeAgent.exe"""; Flags: uninsdeletevalue
 
 [Run]
-Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\install-runtime-deps.ps1"" -InstallDir ""{app}"""; StatusMsg: "Downloading runtime dependencies (VictoriaMetrics and OpenTelemetry Collector)..."; Flags: waituntilterminated
+Filename: "pwsh.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\install-runtime-deps.ps1"" -InstallDir ""{app}"""; StatusMsg: "Downloading runtime dependencies (VictoriaMetrics and OpenTelemetry Collector)..."; Flags: waituntilterminated
 
 [Run]
 Filename: "{app}\Aiden.TrayMonitor.exe"; Description: Launch Aiden Tray Monitor; Flags: nowait postinstall skipifsilent

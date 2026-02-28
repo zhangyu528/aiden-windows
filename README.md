@@ -22,7 +22,7 @@ Windows desktop monitoring project for Gemini CLI telemetry.
 
 ## Run
 
-```powershell
+```pwsh
 cd Aiden.TrayMonitor
 dotnet restore
 dotnet run
@@ -30,7 +30,7 @@ dotnet run
 
 Run runtime agent (optional manual run, normally auto-started by tray):
 
-```powershell
+```pwsh
 cd Aiden.RuntimeAgent
 dotnet restore
 dotnet run
@@ -67,8 +67,8 @@ Runtime binaries are intentionally excluded from version control.
 
 Download and install `victoria-metrics.exe` with hash verification:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-vm.ps1 `
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-vm.ps1 `
   -Version "v1.113.0" `
   -DownloadUrl "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.113.0/victoria-metrics-windows-amd64-v1.113.0.zip" `
   -Sha256 "ed8f660442a45b260a2c0a0976440ecec863bb75ccb7cec6aad9580364a92de6"
@@ -78,8 +78,8 @@ powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-v
 
 Download OTel Collector binary to project runtime path:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-collector.ps1 `
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\download-collector.ps1 `
   -Version "v0.146.1" `
   -DownloadUrl "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.146.1/otelcol-contrib_0.146.1_windows_amd64.tar.gz" `
   -Sha256 "0eaa1ff9d0f5d8009921667368981617641cebb1766fc7b38be95d5dc21a126a"
@@ -108,12 +108,12 @@ Test suites:
 
 Run locally:
 
-```powershell
+```pwsh
 dotnet test tests/Aiden.RuntimeAgent.UnitTests/Aiden.RuntimeAgent.UnitTests.csproj
 dotnet test tests/Aiden.TrayMonitor.UnitTests/Aiden.TrayMonitor.UnitTests.csproj
 dotnet test tests/Aiden.IntegrationTests/Aiden.IntegrationTests.csproj
 dotnet test tests/Aiden.UI.Tests/Aiden.UI.Tests.csproj
-pwsh -Command "Invoke-Pester -Path tests/Aiden.Scripts.Tests -CI"
+pwsh -ExecutionPolicy Bypass -File .\scripts\run-script-tests.ps1
 ```
 
 CI:
@@ -123,8 +123,8 @@ CI:
 Pre-commit gate:
 - Enable repo-managed hooks:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\setup-githooks.ps1
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\scripts\setup-githooks.ps1
 ```
 
 - Hook entrypoint: `.githooks/pre-commit`
@@ -135,9 +135,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-githooks.ps1
 - Pre-commit script tests require Pester v5.
   Install/update locally:
 
-```powershell
-Install-Module Pester -Scope CurrentUser -MinimumVersion 5.0.0 -Force -SkipPublisherCheck
-Import-Module Pester -MinimumVersion 5.0.0 -Force
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\scripts\ensure-pester-v5.ps1 -Install
 ```
 
 ## Release Signature and Integrity Verification
@@ -150,7 +149,7 @@ Release artifacts are signed by the project release workflow via SignPath.
 
 Verify installer signature:
 
-```powershell
+```pwsh
 Get-AuthenticodeSignature .\Aiden-Setup-<version>-win-x64.exe | Format-List Status,SignerCertificate,TimeStamperCertificate
 ```
 
@@ -159,7 +158,7 @@ Expected `Status`: `Valid`.
 Each release also includes `SHA256SUMS.txt`.
 Verify file hash against published digest:
 
-```powershell
+```pwsh
 Get-FileHash -Algorithm SHA256 .\Aiden-Setup-<version>-win-x64.exe
 ```
 
@@ -186,3 +185,4 @@ Behavior:
 Do not include prerelease suffixes in `base_version` input.
 
 For full policy details, see `CODE_SIGNING_POLICY.md`.
+
