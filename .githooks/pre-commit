@@ -1,9 +1,7 @@
-#!/bin/sh
+#!C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -ExecutionPolicy Bypass -NoLogo -NoProfile -File
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
 
-SCRIPT_PATH="$(cd "$(dirname "$0")/.." && pwd)/scripts/precommit-gate.ps1"
-if command -v cygpath >/dev/null 2>&1; then
-  SCRIPT_PATH="$(cygpath -w "$SCRIPT_PATH")"
-fi
-
-pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File "$SCRIPT_PATH"
-exit $?
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
+& (Join-Path $repoRoot 'scripts\precommit-gate.ps1')
+exit $LASTEXITCODE
