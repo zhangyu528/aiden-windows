@@ -51,7 +51,7 @@ try {
 
     $runtimePrefixes = @('Aiden.RuntimeAgent/', 'tests/Aiden.RuntimeAgent.UnitTests/')
     $trayPrefixes = @('Aiden.TrayMonitor/', 'tests/Aiden.TrayMonitor.UnitTests/')
-    $scriptPrefixes = @('.github/scripts/', 'Aiden.RuntimeAgent/scripts/', 'tests/Aiden.Scripts.Tests/', '.github/workflows/', '.githooks/', 'scripts/precommit-gate.ps1', 'scripts/setup-githooks.ps1', 'scripts/ensure-pester-v5.ps1', 'scripts/run-script-tests.ps1')
+    $scriptPrefixes = @('.github/scripts/', 'Aiden.RuntimeAgent/scripts/', 'tests/Aiden.Scripts.Tests/', '.github/workflows/', '.githooks/', 'scripts/setup-githooks.ps1', 'scripts/ensure-pester-v5.ps1', 'scripts/run-script-tests.ps1')
 
     $needsRuntime = $false
     $needsTray = $false

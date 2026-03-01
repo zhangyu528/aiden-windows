@@ -58,6 +58,53 @@ CI workflows:
 - Nightly tests: `.github/workflows/tests-nightly.yml`
 - Feishu notify on `push main`: `.github/workflows/feishu-notification.yml`
 
+Pre-commit gate:
+- Enable repo-managed hooks:
+
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\scripts\setup-githooks.ps1
+```
+
+- Hook entrypoint: `.githooks/pre-commit`
+- Gate script: `.githooks/pre-commit-gate.ps1`
+- Fast checks run on staged changes only:
+  - impacted project build + unit tests
+  - script tests via Pester
+- Pre-commit script tests require Pester v5.
+  Install/update locally:
+
+```pwsh
+pwsh -ExecutionPolicy Bypass -File .\scripts\ensure-pester-v5.ps1 -Install
+```
+
+## Release Signature and Integrity Verification
+
+Release artifacts are signed by the project release workflow via SignPath.
+
+- `Aiden.TrayMonitor.exe`
+- `Aiden.RuntimeAgent.exe`
+- `Aiden-Setup-<version>-win-x64.exe`
+
+Verify installer signature:
+
+```pwsh
+Get-AuthenticodeSignature .\Aiden-Setup-<version>-win-x64.exe | Format-List Status,SignerCertificate,TimeStamperCertificate
+```
+
+Expected `Status`: `Valid`.
+
+Each release also includes `SHA256SUMS.txt`.
+Verify file hash against published digest:
+
+```pwsh
+Get-FileHash -Algorithm SHA256 .\Aiden-Setup-<version>-win-x64.exe
+```
+
+Compare the output hash with the corresponding line in `SHA256SUMS.txt`.
+
+## Pre-release Publishing
+
+Use GitHub Actions workflow `.github/workflows/prerelease.yml` to create pre-releases.
 Detailed test matrix/report paths/troubleshooting:
 - [自动化测试-ATD](docs/自动化测试-ATD.md)
 
@@ -69,6 +116,7 @@ Pre-release workflow:
 Code signing policy:
 - [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)
 
+For full policy details, see `CODE_SIGNING_POLICY.md`.
 ## Docs Index
 
 - [产品需求-FRD](docs/产品需求-FRD.md)

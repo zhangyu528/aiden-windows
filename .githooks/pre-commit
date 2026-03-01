@@ -1,7 +1,5 @@
-#!C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -ExecutionPolicy Bypass -NoLogo -NoProfile -File
-$ErrorActionPreference = 'Stop'
-Set-StrictMode -Version Latest
+#!/bin/sh
+set -eu
 
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
-& (Join-Path $repoRoot 'scripts\precommit-gate.ps1')
-exit $LASTEXITCODE
+SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
+exec pwsh -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$SCRIPT_DIR/pre-commit-gate.ps1"
