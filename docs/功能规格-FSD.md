@@ -102,8 +102,8 @@
 8. 异常场景下状态正确显示为 OFFLINE。
 
 ## 6. 关联文档
-- 技术实现细节见：`docs/Aiden本地集成版-TDD.md`
-- 需求总览见：`docs/Aiden本地集成版-FRD.md`
+- 技术实现细节见：`docs/技术设计-TDD.md`
+- 需求总览见：`docs/产品需求-FRD.md`
 
 ## 7. 指标口径补充（实现对齐）
 - Input/Output 口径保持不变：按 `gen_ai.client.token.usage_sum` + `gen_ai.token.type` 查询。
@@ -113,3 +113,4 @@
 - Codex 转换指标导出 VM 前增加 `deltatocumulative` 与 `metricstarttime` 处理，
   以保证 VictoriaMetrics 可查询性。
 - Codex 转换指标查询可见性存在延迟，通常约 20-30 秒。
+

@@ -16,6 +16,10 @@ Windows desktop monitoring project for Gemini CLI telemetry.
 - `Aiden.RuntimeAgent/`: user-level background daemon that supervises VM + Collector
 - `docs/`: FRD and system design documents
 
+## Test Docs
+
+- [自动化测试-ATD](docs/自动化测试-ATD.md)
+
 ## Prerequisites
 
 - Windows 10/11

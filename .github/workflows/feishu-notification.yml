@@ -1,9 +1,8 @@
 name: Feishu Notification
 
 on:
-  workflow_run:
-    workflows: ["Create Pre-release"]
-    types: [completed]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -26,9 +25,10 @@ jobs:
           ACTOR: ${{ github.actor }}
           REF_NAME: ${{ github.ref_name }}
           CURRENT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
-          SOURCE_RUN_URL: ${{ github.event.workflow_run.html_url }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: bash .github/scripts/build-feishu-payload.sh
 
       - name: Send to Feishu

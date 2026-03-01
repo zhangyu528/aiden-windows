@@ -1,4 +1,4 @@
-﻿# Aiden 本地托盘监控 FRD（产品需求）
+# Aiden 本地托盘监控 FRD（产品需求）
 
 ## 1. 产品目标
 在 Windows 提供低打扰的托盘监控体验，帮助用户查看已开通 CLI（Gemini/Codex/Claude Code）的 telemetry 消耗，并在关闭 UI 后保持采集连续性。
@@ -110,8 +110,8 @@
 - 支持模型价格与上下文能力配置。
 
 > 具体配置文件拆分、字段定义与默认值详见：
-> - `docs/Aiden本地集成版-FSD.md`
-> - `docs/Aiden本地集成版-TDD.md`
+> - `docs/功能规格-FSD.md`
+> - `docs/技术设计-TDD.md`
 
 ## 6. 验收标准
 1. 启动后可在托盘面板看到核心指标字段。
@@ -128,9 +128,9 @@
 
 ## 7. 关联文档
 - 技术策略、组件架构、配置拆分、守护机制、升级卸载脚本与指标计算口径：
-  - `docs/Aiden本地集成版-TDD.md`
+  - `docs/技术设计-TDD.md`
 - 功能规格定义与验收口径：
-  - `docs/Aiden本地集成版-FSD.md`
+  - `docs/功能规格-FSD.md`
 
 ## 8. 实现口径补充（与当前版本对齐）
 - Context 指标口径为当前活跃 session 的 `input` token（`gen_ai.token.type="input"`），
@@ -140,3 +140,4 @@
 - Codex 转换后的指标在导出到 VM 前，需要经过
   `deltatocumulative` + `metricstarttime`，以保证可稳定查询。
 - Codex 转换指标写入后到查询可见存在延迟，通常约 20-30 秒。
+
