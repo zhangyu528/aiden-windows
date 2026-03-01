@@ -133,7 +133,7 @@ pwsh -ExecutionPolicy Bypass -File .\scripts\setup-githooks.ps1
 ```
 
 - Hook entrypoint: `.githooks/pre-commit`
-- Gate script: `scripts/precommit-gate.ps1`
+- Gate script: `.githooks/pre-commit-gate.ps1`
 - Fast checks run on staged changes only:
   - impacted project build + unit tests
   - script tests via Pester
@@ -190,4 +190,3 @@ Behavior:
 Do not include prerelease suffixes in `base_version` input.
 
 For full policy details, see `CODE_SIGNING_POLICY.md`.
-
