@@ -9,7 +9,16 @@ param(
     [string]$Sha256 = "",
 
     [Parameter(Mandatory = $false)]
-    [bool]$VerifyComponents = $true
+    [bool]$VerifyComponents = $true,
+
+    [Parameter(Mandatory = $false)]
+    [string]$InstallRoot = "",
+
+    [Parameter(Mandatory = $false)]
+    [switch]$AllowInsecureFallback,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
@@ -63,11 +72,21 @@ function Resolve-Sha256FromReleaseAssets {
     throw "Unable to resolve SHA256 for $ArchiveFileName from release checksum assets"
 }
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-$installRoot = Join-Path $repoRoot "Aiden.RuntimeAgent\runtime\collector"
+$installBase = if ([string]::IsNullOrWhiteSpace($InstallRoot)) {
+    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+    Join-Path $repoRoot "Aiden.RuntimeAgent"
+}
+else {
+    if (-not (Test-Path $InstallRoot)) {
+        New-Item -ItemType Directory -Path $InstallRoot -Force | Out-Null
+    }
+    (Resolve-Path $InstallRoot).Path
+}
+
+$installRoot = Join-Path $installBase "runtime\collector"
 $targetDir = Join-Path $installRoot $Version
 
-if (Test-Path $targetDir) {
+if ((Test-Path $targetDir) -and (-not $Force.IsPresent)) {
     $existing = Get-ChildItem -Recurse -Path $targetDir -Filter $expectedExeName | Select-Object -First 1
     if ($existing) {
         Write-Host "Collector already exists: $($existing.FullName)"
@@ -83,7 +102,11 @@ $resolvedSha256 = if ([string]::IsNullOrWhiteSpace($Sha256)) {
         Resolve-Sha256FromReleaseAssets -Repo "open-telemetry/opentelemetry-collector-releases" -Version $Version -ArchiveFileName $archiveName
     }
     catch {
-        Write-Warning "Unable to auto-resolve SHA256 from release assets. Continuing without hash verification. Details: $($_.Exception.Message)"
+        if (-not $AllowInsecureFallback.IsPresent) {
+            throw
+        }
+
+        Write-Warning "Unable to auto-resolve SHA256 from release assets. Continuing without hash verification because -AllowInsecureFallback is set. Details: $($_.Exception.Message)"
         ""
     }
 }

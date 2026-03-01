@@ -21,6 +21,8 @@ Notes:
 
 - The script verifies SHA256 before extraction.
 - `-DownloadUrl` and `-Sha256` are optional. When omitted, the script uses default URL pattern and resolves SHA256 from the release assets API.
+- `-InstallRoot` is optional. Default install root is the project path (`Aiden.RuntimeAgent/runtime/...`).
+- `-AllowInsecureFallback` is optional. By default, SHA256 resolution/verification failure stops execution.
 - Runtime binaries are excluded by `.gitignore`.
 
 ## download-collector.ps1
@@ -46,6 +48,8 @@ Notes:
 - Default artifact is contrib collector (`otelcol-contrib_...`).
 - Script requires `otelcol-contrib.exe`; core collector is not accepted.
 - `-VerifyComponents` defaults to `true` and verifies required components.
+- `-InstallRoot` is optional. Default install root is the project path (`Aiden.RuntimeAgent/runtime/...`).
+- `-AllowInsecureFallback` is optional. By default, SHA256 resolution/verification failure stops execution.
 - When `-Sha256` is omitted, script resolves hash from release assets API checksum files.
 
 ## upgrade-stop-install-start.ps1
@@ -85,4 +89,3 @@ pwsh -ExecutionPolicy Bypass -File .\Aiden.RuntimeAgent\scripts\inspect-otlp-log
 Optional:
 
 - `-LogPath` to target a specific `otlp-logs.jsonl`.
-
