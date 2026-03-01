@@ -1,4 +1,11 @@
-﻿# 指标与标签深度讲解：Gemini CLI 原生上报 vs VM 查询视角
+> 前置阅读：
+> - `docs/产品需求-FRD.md`
+> - `docs/功能规格-FSD.md`
+> - `docs/技术设计-TDD.md`
+> - `docs/自动化测试-ATD.md`
+>
+> 适用场景：当你需要分析指标口径、排查查询结果与原始上报差异时阅读本专题。
+# 指标与标签深度讲解：Gemini CLI 原生上报 vs VM 查询视角
 
 ## 学习地图（先看这里）
 
@@ -551,3 +558,4 @@ sum by (gen_ai.request.model, gen_ai.token.type) (
   last_over_time(gen_ai.client.token.usage_sum{service.name="gemini-cli"}[1d])
 )
 ```
+
