@@ -38,8 +38,16 @@ if (Test-Path $iconSource) {
 }
 Write-Host "Copying installer runtime helper"
 $helperScriptSource = Join-Path $repoRoot '.github\installer\install-runtime-deps.ps1'
+$downloadVmScriptSource = Join-Path $repoRoot 'Aiden.RuntimeAgent\scripts\download-vm.ps1'
+$downloadCollectorScriptSource = Join-Path $repoRoot 'Aiden.RuntimeAgent\scripts\download-collector.ps1'
 if (-not (Test-Path $helperScriptSource)) {
     throw "Helper script not found: $helperScriptSource"
+}
+if (-not (Test-Path $downloadVmScriptSource)) {
+    throw "VM download script not found: $downloadVmScriptSource"
+}
+if (-not (Test-Path $downloadCollectorScriptSource)) {
+    throw "Collector download script not found: $downloadCollectorScriptSource"
 }
 $helperDestDir = Join-Path $packageDir 'scripts'
 if (Test-Path $helperDestDir) {
@@ -47,9 +55,19 @@ if (Test-Path $helperDestDir) {
 }
 New-Item -ItemType Directory -Path $helperDestDir -Force | Out-Null
 Copy-Item -Path $helperScriptSource -Destination $helperDestDir -Force
+Copy-Item -Path $downloadVmScriptSource -Destination $helperDestDir -Force
+Copy-Item -Path $downloadCollectorScriptSource -Destination $helperDestDir -Force
 $packagedHelper = Join-Path $helperDestDir 'install-runtime-deps.ps1'
+$packagedVm = Join-Path $helperDestDir 'download-vm.ps1'
+$packagedCollector = Join-Path $helperDestDir 'download-collector.ps1'
 if (-not (Test-Path $packagedHelper)) {
     throw "Packaged helper script not found after copy: $packagedHelper"
+}
+if (-not (Test-Path $packagedVm)) {
+    throw "Packaged VM download script not found after copy: $packagedVm"
+}
+if (-not (Test-Path $packagedCollector)) {
+    throw "Packaged collector download script not found after copy: $packagedCollector"
 }
 
 Write-Host "Payload staged in $packageDir"

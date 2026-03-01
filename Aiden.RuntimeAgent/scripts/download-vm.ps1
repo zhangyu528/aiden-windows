@@ -6,7 +6,16 @@ param(
     [string]$DownloadUrl = "",
 
     [Parameter(Mandatory = $false)]
-    [string]$Sha256 = ""
+    [string]$Sha256 = "",
+
+    [Parameter(Mandatory = $false)]
+    [string]$InstallRoot = "",
+
+    [Parameter(Mandatory = $false)]
+    [switch]$AllowInsecureFallback,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
@@ -58,12 +67,22 @@ function Resolve-Sha256FromReleaseAssets {
     throw "Unable to resolve SHA256 for $ArchiveFileName. Provide -Sha256 explicitly."
 }
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-$installRoot = Join-Path $repoRoot "Aiden.RuntimeAgent\runtime\vm"
+$installBase = if ([string]::IsNullOrWhiteSpace($InstallRoot)) {
+    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+    Join-Path $repoRoot "Aiden.RuntimeAgent"
+}
+else {
+    if (-not (Test-Path $InstallRoot)) {
+        New-Item -ItemType Directory -Path $InstallRoot -Force | Out-Null
+    }
+    (Resolve-Path $InstallRoot).Path
+}
+
+$installRoot = Join-Path $installBase "runtime\vm"
 $targetDir = Join-Path $installRoot $Version
 $exePath = Join-Path $targetDir "victoria-metrics.exe"
 
-if (Test-Path $exePath) {
+if ((Test-Path $exePath) -and (-not $Force.IsPresent)) {
     Write-Host "victoria-metrics already exists: $exePath"
     exit 0
 }
@@ -77,16 +96,31 @@ if (Test-Path $tempZip) {
 
 if ([string]::IsNullOrWhiteSpace($Sha256)) {
     $archiveName = Split-Path -Leaf $DownloadUrl
-    $Sha256 = Resolve-Sha256FromReleaseAssets -Repo "VictoriaMetrics/VictoriaMetrics" -Version $Version -ArchiveFileName $archiveName
+    try {
+        $Sha256 = Resolve-Sha256FromReleaseAssets -Repo "VictoriaMetrics/VictoriaMetrics" -Version $Version -ArchiveFileName $archiveName
+    }
+    catch {
+        if (-not $AllowInsecureFallback.IsPresent) {
+            throw
+        }
+
+        Write-Warning "Unable to auto-resolve SHA256 from release assets. Continuing without hash verification because -AllowInsecureFallback is set. Details: $($_.Exception.Message)"
+        $Sha256 = ""
+    }
 }
 
 Write-Host "Downloading: $DownloadUrl"
 Invoke-WebRequest -Uri $DownloadUrl -OutFile $tempZip
 
-$actualHash = (Get-FileHash -Algorithm SHA256 -Path $tempZip).Hash.ToLowerInvariant()
-$expectedHash = $Sha256.ToLowerInvariant()
-if ($actualHash -ne $expectedHash) {
-    throw "SHA256 mismatch. expected=$expectedHash actual=$actualHash"
+if (-not [string]::IsNullOrWhiteSpace($Sha256)) {
+    $actualHash = (Get-FileHash -Algorithm SHA256 -Path $tempZip).Hash.ToLowerInvariant()
+    $expectedHash = $Sha256.ToLowerInvariant()
+    if ($actualHash -ne $expectedHash) {
+        throw "SHA256 mismatch. expected=$expectedHash actual=$actualHash"
+    }
+}
+else {
+    Write-Warning "SHA256 verification skipped (no hash provided or resolvable)."
 }
 
 $extractDir = Join-Path $env:TEMP ("victoria-metrics-extract-" + [guid]::NewGuid().ToString("N"))
