@@ -14,10 +14,9 @@ fi
 
 status="triggered"
 run_url="${CURRENT_RUN_URL:-}"
-if [ "${EVENT_NAME:-}" = "workflow_run" ]; then
-  status="${WORKFLOW_CONCLUSION:-completed}"
-  run_url="${SOURCE_RUN_URL:-${CURRENT_RUN_URL:-}}"
-fi
+commit_url="${COMMIT_URL:-}"
+commit_sha="${COMMIT_SHA:-}"
+commit_message="${COMMIT_MESSAGE:-}"
 
 ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 workflow_display="${WORKFLOW_NAME:-}"
@@ -25,51 +24,50 @@ if [ -z "$workflow_display" ]; then
   workflow_display="${GITHUB_WORKFLOW:-Feishu Notification}"
 fi
 
-status_text="$status"
-case "$status" in
-  success) status_text="Success" ;;
-  failure) status_text="Failure" ;;
-  cancelled) status_text="Cancelled" ;;
-  timed_out) status_text="Timed Out" ;;
-  action_required) status_text="Action Required" ;;
-  triggered) status_text="Triggered" ;;
-  completed) status_text="Completed" ;;
-esac
+if [ -z "$commit_message" ]; then
+  commit_message="(No commit message)"
+fi
 
-color="blue"
-case "$status" in
-  success) color="green" ;;
-  failure|cancelled|timed_out|action_required) color="red" ;;
-esac
+short_sha="${commit_sha:0:7}"
+if [ -z "$short_sha" ]; then
+  short_sha="unknown"
+fi
 
 jq -n \
   --arg repository "${REPOSITORY:-}" \
   --arg event_name "${EVENT_NAME:-}" \
-  --arg status_text "$status_text" \
   --arg actor "${ACTOR:-}" \
   --arg ref_name "${REF_NAME:-}" \
   --arg workflow_display "$workflow_display" \
   --arg run_url "$run_url" \
+  --arg commit_url "$commit_url" \
+  --arg commit_sha "$commit_sha" \
+  --arg short_sha "$short_sha" \
+  --arg commit_message "$commit_message" \
   --arg ts "$ts" \
-  --arg color "$color" \
+  --arg color "green" \
   '{
     msg_type: "interactive",
     card: {
       config: { wide_screen_mode: true, enable_forward: true },
       header: {
         template: $color,
-        title: { tag: "plain_text", content: "Aiden Windows Notification" }
+        title: { tag: "plain_text", content: "Main Branch Updated" }
       },
       elements: [
+        {
+          tag: "markdown",
+          content: ("**Commit Message**\n" + $commit_message)
+        },
         {
           tag: "div",
           fields: [
             { is_short: true, text: { tag: "lark_md", content: ("**Repository**\n" + $repository) } },
-            { is_short: true, text: { tag: "lark_md", content: ("**Event**\n" + $event_name) } },
-            { is_short: true, text: { tag: "lark_md", content: ("**Status**\n" + $status_text) } },
             { is_short: true, text: { tag: "lark_md", content: ("**Actor**\n" + $actor) } },
-            { is_short: false, text: { tag: "lark_md", content: ("**Ref**\n" + $ref_name) } },
-            { is_short: false, text: { tag: "lark_md", content: ("**Workflow**\n" + $workflow_display) } }
+            { is_short: true, text: { tag: "lark_md", content: ("**Branch**\n" + $ref_name) } },
+            { is_short: true, text: { tag: "lark_md", content: ("**Commit**\n" + $short_sha) } },
+            { is_short: false, text: { tag: "lark_md", content: ("**Workflow**\n" + $workflow_display) } },
+            { is_short: false, text: { tag: "lark_md", content: ("**Event**\n" + $event_name) } }
           ]
         },
         {
@@ -77,8 +75,14 @@ jq -n \
           actions: [
             {
               tag: "button",
-              text: { tag: "plain_text", content: "Open Run" },
+              text: { tag: "plain_text", content: "Open Commit" },
               type: "primary",
+              url: ($commit_url // $run_url)
+            },
+            {
+              tag: "button",
+              text: { tag: "plain_text", content: "Open Run" },
+              type: "default",
               url: $run_url
             }
           ]
@@ -93,8 +97,8 @@ jq -n \
     }
   }' > payload.json
 
-echo "status=$status" >> "$GITHUB_OUTPUT"
+echo "status=notified" >> "$GITHUB_OUTPUT"
 echo "run_url=$run_url" >> "$GITHUB_OUTPUT"
 echo "skipped=false" >> "$GITHUB_OUTPUT"
-echo "summary=event=${EVENT_NAME:-}, status=${status}, run_url=${run_url}" >> "$GITHUB_OUTPUT"
-echo "::notice::${EVENT_NAME:-} | ${status} | ${run_url}"
+echo "summary=event=${EVENT_NAME:-}, commit=${short_sha}, run_url=${run_url}" >> "$GITHUB_OUTPUT"
+echo "::notice::${EVENT_NAME:-} | commit=${short_sha} | ${run_url}"

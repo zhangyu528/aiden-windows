@@ -136,5 +136,6 @@
 - Tray 菜单可查看 Runtime 状态。
 
 ## 11. 关联文档
-- 功能规格见：`docs/Aiden本地集成版-FSD.md`
-- 需求总览见：`docs/Aiden本地集成版-FRD.md`
+- 功能规格见：`docs/功能规格-FSD.md`
+- 需求总览见：`docs/产品需求-FRD.md`
+
