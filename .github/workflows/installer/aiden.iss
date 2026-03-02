@@ -4,12 +4,10 @@
 #define AppVersion "0.0.0"
 #endif
 
-#ifndef SourceDir
-#define SourceDir "..\\..\\artifacts\\stage\\package"
+#define SourceDir "..\\..\\..\\artifacts\\stage\\package"
 #endif
 
-#ifndef OutputDir
-#define OutputDir "..\\..\\artifacts\\installer"
+#define OutputDir "..\\..\\..\\artifacts\\installer"
 #endif
 
 #define InstallerFilename "Aiden-Setup-" + AppVersion + "-" + InstallerBitness

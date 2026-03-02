@@ -30,8 +30,8 @@
 - `CliProvisioningService`：CLI 安装检测与配置写入
 
 ### 3.3 脚本与流程
-- `scripts/run-script-tests.ps1`：Pester 测试入口
-- `scripts/run-ui-tests.ps1`：UI 测试入口（含 `AIDEN_UI_APP_PATH` 解析）
+- `automation/tests/Aiden/`：产品逻辑测试目录 (Unit, Integration, UI)
+- `automation/tests/Workflow/`：CI 脚本 Pester 用例目录
 - `.github/workflows/build.yml`：手动编译校验
 - `.github/workflows/tests-pr.yml`：PR 测试
 - `.github/workflows/tests-nightly.yml`：Nightly 测试
@@ -59,13 +59,12 @@
 
 - 构建：`build.yml`（手动，`dotnet build Aiden.sln -c Release`）
 - 单元/集成：`tests-pr.yml` + `tests-nightly.yml`
-- UI：`tests-nightly.yml`（调用 `run-ui-tests.ps1`）
-- 脚本：`run-script-tests.ps1` + CI Summary
+- `automation/tests/Invoke-TestGate.ps1 -Scope Staged/PR/Nightly`：统一测试入口 + CI Summary
 
 测试报告路径统一：
 - `artifacts/test-results/dotnet/*.trx`
 - `artifacts/test-results/ui/*.trx`
-- `artifacts/test-results/scripts/pester-scripts.xml`
+- `artifacts/test-results/scripts/pester-workflow.xml`
 
 ## 7. 限制与兼容性说明
 

@@ -51,7 +51,7 @@ try {
 
     $runtimePrefixes = @('Aiden.RuntimeAgent/', 'tests/Aiden.RuntimeAgent.UnitTests/')
     $trayPrefixes = @('Aiden.TrayMonitor/', 'tests/Aiden.TrayMonitor.UnitTests/')
-    $scriptPrefixes = @('.github/scripts/', 'Aiden.RuntimeAgent/scripts/', 'tests/Aiden.Scripts.Tests/', '.github/workflows/', '.githooks/', 'scripts/setup-githooks.ps1', 'scripts/ensure-pester-v5.ps1', 'scripts/run-script-tests.ps1')
+    $scriptPrefixes = @('.github/workflows/', '.githooks/', 'Aiden.RuntimeAgent/scripts/', 'automation/tests/Aiden/', 'automation/tests/Workflow/', 'automation/tests/ensure-pester-v5.ps1')
 
     $needsRuntime = $false
     $needsTray = $false
@@ -74,21 +74,25 @@ try {
         dotnet restore Aiden.sln --verbosity quiet
     }
 
-    if ($needsRuntime) {
-        Write-Host "pre-commit: runtime build + unit tests..."
-        dotnet build Aiden.RuntimeAgent/Aiden.RuntimeAgent.csproj -c Debug --no-restore -nologo
-        dotnet test tests/Aiden.RuntimeAgent.UnitTests/Aiden.RuntimeAgent.UnitTests.csproj -c Debug --no-build --no-restore -nologo
-    }
+    $testRunner = Join-Path $repoRoot 'automation\tests\Invoke-TestGate.ps1'
+    
+    if ($needsRuntime -or $needsTray -or $needsScripts) {
+        Write-Host "pre-commit: executing staged tests (Aiden + Workflow)..." -ForegroundColor Yellow
+        
+        $args = @('-Scope', 'Staged')
+        if ($needsRestore) { $args += '-Configuration', 'Debug' } # We already built if needsRestore
+        # Note: We build specifically before calling runner to ensure build works even if runner has no restore
+        
+        if ($needsRuntime) {
+            Write-Host "pre-commit: building runtime..."
+            dotnet build Aiden.RuntimeAgent/Aiden.RuntimeAgent.csproj -c Debug --no-restore -nologo
+        }
+        if ($needsTray) {
+            Write-Host "pre-commit: building tray..."
+            dotnet build Aiden.TrayMonitor/Aiden.TrayMonitor.csproj -c Debug --no-restore -nologo
+        }
 
-    if ($needsTray) {
-        Write-Host "pre-commit: tray build + unit tests..."
-        dotnet build Aiden.TrayMonitor/Aiden.TrayMonitor.csproj -c Debug --no-restore -nologo
-        dotnet test tests/Aiden.TrayMonitor.UnitTests/Aiden.TrayMonitor.UnitTests.csproj -c Debug --no-build --no-restore -nologo
-    }
-
-    if ($needsScripts) {
-        Write-Host "pre-commit: pester v5 scripts tests..."
-        & (Join-Path $repoRoot 'scripts\run-script-tests.ps1')
+        & $testRunner -Scope Staged -NoRestore:$needsRestore
     }
 
     Write-Host "pre-commit: gate passed."
