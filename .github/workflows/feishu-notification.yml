@@ -18,26 +18,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build payload
-        id: payload
-        shell: pwsh
-        env:
-          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
-          EVENT_NAME: ${{ github.event_name }}
-          REPOSITORY: ${{ github.repository }}
-          ACTOR: ${{ github.actor }}
-          REF_NAME: ${{ github.ref_name }}
-          CURRENT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_NAME: ${{ github.workflow }}
-          COMMIT_SHA: ${{ github.sha }}
-          COMMIT_URL: ${{ github.event.head_commit.url }}
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-        run: pipelines/notifications/build-feishu-payload.ps1
-
-      - name: Send to Feishu
-        if: steps.payload.outputs.skipped != 'true'
-        shell: pwsh
-        env:
-          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
-          FAIL_ON_ERROR: ${{ vars.FEISHU_NOTIFY_FAIL_ON_ERROR }}
-        run: pipelines/notifications/send-feishu-notification.ps1
+      - name: Notify Feishu
+        uses: zhangyu528/sns-notification@main
+        with:
+          feishu_webhook: ${{ secrets.FEISHU_WEBHOOK }}
