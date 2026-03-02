@@ -4,6 +4,7 @@
 ![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
 [![Build](https://github.com/zhangyu528/aiden-windows/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/zhangyu528/aiden-windows/actions/workflows/build.yml)
 [![PR Tests](https://github.com/zhangyu528/aiden-windows/actions/workflows/tests-pr.yml/badge.svg?branch=main)](https://github.com/zhangyu528/aiden-windows/actions/workflows/tests-pr.yml)
+[![Nightly Tests](https://github.com/zhangyu528/aiden-windows/actions/workflows/tests-nightly.yml/badge.svg)](https://github.com/zhangyu528/aiden-windows/actions/workflows/tests-nightly.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/zhangyu528/aiden-windows)](https://github.com/zhangyu528/aiden-windows/releases/latest)
 ![Code Signed](https://img.shields.io/badge/Code_Signed-SignPath-success?logo=checkmarx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
