@@ -30,8 +30,9 @@
 - `CliProvisioningService`：CLI 安装检测与配置写入
 
 ### 3.3 脚本与流程
-- `automation/tests/Aiden/`：产品逻辑测试目录 (Unit, Integration, UI)
-- `automation/tests/Workflow/`：CI 脚本 Pester 用例目录
+- `tests/`: 统一测试目录
+  - `drivers/`: 产品逻辑测试驱动 (Unit, Integration, UI)
+  - `Pipelines/`: CI 脚本 Pester 用例目录
 - `.github/workflows/build.yml`：手动编译校验
 - `.github/workflows/tests-pr.yml`：PR 测试
 - `.github/workflows/tests-nightly.yml`：Nightly 测试
@@ -59,7 +60,7 @@
 
 - 构建：`build.yml`（手动，`dotnet build Aiden.sln -c Release`）
 - 单元/集成：`tests-pr.yml` + `tests-nightly.yml`
-- `automation/tests/Invoke-TestGate.ps1 -Scope Staged/PR/Nightly`：统一测试入口 + CI Summary
+- `tests/Invoke-TestGate.ps1 -Scope Staged/PR/Nightly`：统一测试入口 + CI Summary
 
 测试报告路径统一：
 - `artifacts/test-results/dotnet/*.trx`

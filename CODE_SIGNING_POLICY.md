@@ -14,7 +14,7 @@ The following files are signed for release builds:
 
 Signing runs only in the GitHub Actions pre-release workflow:
 
-- Workflow: `.github/workflows/prerelease.yml`
+- Workflow: `.github/workflows/pre-release.yml`
 - Trigger: `workflow_dispatch` with inputs `base_version` and `channel` (`alpha`/`beta`/`rc`)
 - Provider: SignPath signing request pipeline
 

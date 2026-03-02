@@ -30,7 +30,7 @@ jobs:
 
       - name: Run tests (Nightly Scope)
         shell: pwsh
-        run: .\automation\tests\Invoke-TestGate.ps1 -Scope Nightly -InstallPester
+        run: .\tests\Invoke-TestGate.ps1 -Scope Nightly -InstallPester
 
       - name: Publish .NET test report
         if: always()
@@ -61,22 +61,4 @@ jobs:
       - name: Summarize script tests
         if: always()
         shell: pwsh
-        run: |
-          $reportPath = "artifacts/test-results/scripts/pester-workflow.xml"
-          if (-not (Test-Path $reportPath)) {
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Script Tests`nNo Pester report file found at \`$reportPath\`."
-            exit 0
-          }
-
-          [xml]$report = Get-Content $reportPath -Raw
-          $root = $report.'test-results'
-          $total = [int]$root.total
-          $passed = $total - [int]$root.failures - [int]$root.errors - [int]$root.skipped - [int]$root.'not-run' - [int]$root.inconclusive
-          $failed = [int]$root.failures + [int]$root.errors
-          $skipped = [int]$root.skipped + [int]$root.'not-run' + [int]$root.inconclusive
-
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Script Tests"
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "| Total | Passed | Failed | Skipped |"
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "|---:|---:|---:|---:|"
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "| $total | $passed | $failed | $skipped |"
+        run: pipelines/release/reporting/summarize-pester-results.ps1 -ReportPath "artifacts/test-results/scripts/pester-workflow.xml"

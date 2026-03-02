@@ -10,7 +10,7 @@ try {
         exit 0
     }
 
-    $testRunner = Join-Path $repoRoot 'automation\tests\Invoke-TestGate.ps1'
+    $testRunner = Join-Path $repoRoot 'tests\Invoke-TestGate.ps1'
     & $testRunner -Scope Staged -StagedFiles $staged
 
     Write-Host "pre-commit: gate passed."

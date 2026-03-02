@@ -16,7 +16,7 @@
 | .NET 单元 | `Aiden.TrayMonitor.UnitTests` | `Invoke-TestGate.ps1 -Scope Staged` | TRX | `artifacts/test-results/dotnet/*.trx` | Yes | Yes |
 | .NET 集成 | `Aiden.IntegrationTests` | `Invoke-TestGate.ps1 -Scope PR` | TRX | `artifacts/test-results/dotnet/*.trx` | Yes | Yes |
 | UI | `Aiden.UI.Tests` | `Invoke-TestGate.ps1 -Scope Nightly` | TRX | `artifacts/test-results/ui/*.trx` | No | Yes |
-| 脚本 | `automation/tests/Workflow` | `Invoke-TestGate.ps1 -Scope Staged` | NUnit XML | `artifacts/test-results/scripts/pester-workflow.xml` | Yes | Yes |
+| 脚本 | `tests/Pipelines` | `Invoke-TestGate.ps1 -Scope Staged` | NUnit XML | `artifacts/test-results/scripts/pester-workflow.xml` | Yes | Yes |
 
 ## 3. 本地执行
 
@@ -36,13 +36,13 @@ dotnet test tests/Aiden.IntegrationTests/Aiden.IntegrationTests.csproj -c Releas
 ### 3.2 UI 测试
 
 ```pwsh
-pwsh -ExecutionPolicy Bypass -File .\automation\tests\Invoke-AidenTests.ps1 -Type UI -PublishApp -Configuration Release -TrxLogFileName "ui-smoke.trx" -ResultsDirectory "artifacts/test-results/ui"
+pwsh -ExecutionPolicy Bypass -File .\tests\Invoke-TestGate.ps1 -Scope Nightly -AppPath "path/to/app"
 ```
 
 ### 3.3 脚本测试（Pester）
 
 ```pwsh
-pwsh -ExecutionPolicy Bypass -File .\automation\tests\Invoke-AidenTests.ps1 -Type Scripts -InstallPester
+pwsh -ExecutionPolicy Bypass -File .\tests\Invoke-TestGate.ps1 -Scope Staged -InstallPester
 ```
 
 ## 4. CI 流程
