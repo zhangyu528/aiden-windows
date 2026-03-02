@@ -12,4 +12,4 @@ if (-not (Test-Path $installer)) {
 }
 
 $hash = (Get-FileHash -Algorithm SHA256 -Path $installer).Hash.ToLowerInvariant()
-"$hash  $(Split-Path -Leaf $installer)" | Out-File -FilePath "artifacts/installer/SHA256SUMS.txt" -Encoding ascii
+"$hash  $(Split-Path -Leaf $installer)" | Set-Content -Path "artifacts/installer/SHA256SUMS.txt" -Encoding Ascii

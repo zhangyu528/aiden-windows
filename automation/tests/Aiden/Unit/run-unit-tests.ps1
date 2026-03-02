@@ -5,7 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')
 
 $testProjects = @(
     (Join-Path $repoRoot "tests/Aiden.RuntimeAgent.UnitTests/Aiden.RuntimeAgent.UnitTests.csproj"),

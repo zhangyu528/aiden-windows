@@ -27,6 +27,18 @@ try {
     $runIntegration = ($Scope -eq 'PR' -or $Scope -eq 'Nightly')
     $runUI = ($Scope -eq 'Nightly')
 
+    if ($Scope -eq 'Staged' -and $StagedFiles.Count -gt 0) {
+        $hasAidenChanges = $StagedFiles -match 'Aiden\.RuntimeAgent|Aiden\.TrayMonitor|tests/Aiden\.'
+        $hasWorkflowChanges = $StagedFiles -match '\.github/workflows|automation/tests/Workflow|Invoke-TestGate\.ps1'
+        
+        # If we have specific files, we only run what's relevant. 
+        # If a file doesn't match either (e.g. root README), the orchestrator default (True) stays.
+        if ($hasAidenChanges -or $hasWorkflowChanges) {
+            $runUnit = [bool]$hasAidenChanges
+            $runWorkflow = [bool]$hasWorkflowChanges
+        }
+    }
+
     if ($Scope -eq 'PR' -or $Scope -eq 'Nightly') {
         $Configuration = 'Release'
     }

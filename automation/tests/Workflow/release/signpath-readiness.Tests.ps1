@@ -2,10 +2,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 Describe 'check-signpath-readiness.ps1 Workflow Tests' {
-    $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $readinessScript = Join-Path $repoRoot '.github\workflows\release\check-signpath-readiness.ps1'
-
     BeforeAll {
+        $script:repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
+        $script:readinessScript = Join-Path $script:repoRoot '.github\workflows\release\check-signpath-readiness.ps1'
+
         $script:originalEnv = @{
             SIGNPATH_READY = $env:SIGNPATH_READY
             SIGNPATH_ORGANIZATION_ID = $env:SIGNPATH_ORGANIZATION_ID
@@ -18,13 +18,13 @@ Describe 'check-signpath-readiness.ps1 Workflow Tests' {
 
     AfterAll {
         foreach ($key in $script:originalEnv.Keys) {
-            $env:$key = $script:originalEnv[$key]
+            Set-Item "Env:$key" $script:originalEnv[$key]
         }
     }
 
     It 'fails when readiness flag is not true' {
         $env:SIGNPATH_READY = 'false'
-        { & $readinessScript } | Should -Throw
+        { & $script:readinessScript } | Should -Throw
     }
 
     It 'passes when all required variables exist and readiness true' {
@@ -35,6 +35,6 @@ Describe 'check-signpath-readiness.ps1 Workflow Tests' {
         $env:SIGNPATH_UNSIGNED_ARTIFACT_CFG = 'unsigned'
         $env:SIGNPATH_INSTALLER_ARTIFACT_CFG = 'installer'
 
-        & $readinessScript | Out-Null
+        & $script:readinessScript | Out-Null
     }
 }
