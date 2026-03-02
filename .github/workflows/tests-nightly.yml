@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  dotnet-tests:
+  tests:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -28,11 +28,9 @@ jobs:
       - name: Restore solution
         run: dotnet restore Aiden.sln
 
-      - name: Run unit and integration tests
-        run: |
-          dotnet test tests/Aiden.RuntimeAgent.UnitTests/Aiden.RuntimeAgent.UnitTests.csproj -c Release --no-restore --collect:"XPlat Code Coverage" --logger "trx;LogFileName=runtimeagent-unit.trx" --results-directory artifacts/test-results/dotnet
-          dotnet test tests/Aiden.TrayMonitor.UnitTests/Aiden.TrayMonitor.UnitTests.csproj -c Release --no-restore --collect:"XPlat Code Coverage" --logger "trx;LogFileName=traymonitor-unit.trx" --results-directory artifacts/test-results/dotnet
-          dotnet test tests/Aiden.IntegrationTests/Aiden.IntegrationTests.csproj -c Release --no-restore --collect:"XPlat Code Coverage" --logger "trx;LogFileName=integration.trx" --results-directory artifacts/test-results/dotnet
+      - name: Run tests (Nightly Scope)
+        shell: pwsh
+        run: .\automation\tests\Invoke-TestGate.ps1 -Scope Nightly -InstallPester
 
       - name: Publish .NET test report
         if: always()
@@ -43,32 +41,6 @@ jobs:
           reporter: dotnet-trx
           fail-on-error: false
 
-  ui-tests:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Restore solution
-        run: dotnet restore Aiden.sln
-
-      - name: Build tray app for UI smoke
-        run: |
-          dotnet publish Aiden.TrayMonitor/Aiden.TrayMonitor.csproj `
-            -c Release `
-            -r win-x64 `
-            --self-contained false `
-            -o artifacts/ui-test/tray
-
-      - name: Run UI tests
-        shell: pwsh
-        run: .\scripts\run-ui-tests.ps1 -Configuration Release -NoRestore -AppPath ".\artifacts\ui-test\tray\Aiden.TrayMonitor.exe" -TrxLogFileName "ui-smoke.trx" -ResultsDirectory "artifacts/test-results/ui"
-
       - name: Publish UI test report
         if: always()
         uses: dorny/test-reporter@v2
@@ -78,29 +50,19 @@ jobs:
           reporter: dotnet-trx
           fail-on-error: false
 
-  scripts-tests:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run scripts tests
-        shell: pwsh
-        run: .\scripts\run-script-tests.ps1 -InstallPester
-
       - name: Upload script test report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nightly-pester-test-results
-          path: artifacts/test-results/scripts/pester-scripts.xml
+          name: pester-test-results
+          path: artifacts/test-results/scripts/pester-workflow.xml
           if-no-files-found: ignore
 
       - name: Summarize script tests
         if: always()
         shell: pwsh
         run: |
-          $reportPath = "artifacts/test-results/scripts/pester-scripts.xml"
+          $reportPath = "artifacts/test-results/scripts/pester-workflow.xml"
           if (-not (Test-Path $reportPath)) {
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Script Tests`nNo Pester report file found at \`$reportPath\`."
             exit 0

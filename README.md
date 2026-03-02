@@ -12,9 +12,8 @@ Windows desktop monitoring project for Gemini CLI telemetry.
 
 ## Project Structure
 
-- `Aiden.TrayMonitor/`: WPF tray app (tray UI + onboarding/settings)
-- `Aiden.RuntimeAgent/`: background agent supervising VM + Collector
-- `tests/`: unit/integration/UI/script tests
+- `automation/tests/Aiden/`: .NET & Pester tests for Aiden components (Unit, Integration, UI)
+- `automation/tests/Workflow/`: Pester tests for CI scripts
 - `docs/`: product/spec/design/test docs
 
 ## Quick Start
@@ -48,8 +47,8 @@ Local quick commands:
 dotnet test tests/Aiden.RuntimeAgent.UnitTests/Aiden.RuntimeAgent.UnitTests.csproj
 dotnet test tests/Aiden.TrayMonitor.UnitTests/Aiden.TrayMonitor.UnitTests.csproj
 dotnet test tests/Aiden.IntegrationTests/Aiden.IntegrationTests.csproj
-pwsh -ExecutionPolicy Bypass -File .\scripts\run-ui-tests.ps1 -PublishApp -Configuration Release
-pwsh -ExecutionPolicy Bypass -File .\scripts\run-script-tests.ps1 -InstallPester
+pwsh -ExecutionPolicy Bypass -File .\automation\tests\Invoke-TestGate.ps1 -Scope Nightly
+pwsh -ExecutionPolicy Bypass -File .\automation\tests\Invoke-TestGate.ps1 -Scope PR
 ```
 
 CI workflows:
@@ -62,7 +61,7 @@ Pre-commit gate:
 - Enable repo-managed hooks:
 
 ```pwsh
-pwsh -ExecutionPolicy Bypass -File .\scripts\setup-githooks.ps1
+pwsh -ExecutionPolicy Bypass -File .\.githooks\setup-githooks.ps1
 ```
 
 - Hook entrypoint: `.githooks/pre-commit`
@@ -74,7 +73,7 @@ pwsh -ExecutionPolicy Bypass -File .\scripts\setup-githooks.ps1
   Install/update locally:
 
 ```pwsh
-pwsh -ExecutionPolicy Bypass -File .\scripts\ensure-pester-v5.ps1 -Install
+pwsh -ExecutionPolicy Bypass -File .\automation\tests\ensure-pester-v5.ps1 -Install
 ```
 
 ## Release Signature and Integrity Verification

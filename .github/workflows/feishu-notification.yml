@@ -32,7 +32,7 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
           COMMIT_URL: ${{ github.event.head_commit.url }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-        run: bash .github/scripts/build-feishu-payload.sh
+        run: bash .github/workflows/notifications/build-feishu-payload.sh
 
       - name: Send to Feishu
         if: steps.payload.outputs.skipped != 'true'
@@ -40,4 +40,4 @@ jobs:
         env:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           FAIL_ON_ERROR: ${{ vars.FEISHU_NOTIFY_FAIL_ON_ERROR }}
-        run: bash .github/scripts/send-feishu-notification.sh
+        run: bash .github/workflows/notifications/send-feishu-notification.sh

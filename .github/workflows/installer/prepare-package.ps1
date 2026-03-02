@@ -37,7 +37,7 @@ if (Test-Path $iconSource) {
     Write-Warning "Icon not found: $iconSource"
 }
 Write-Host "Copying installer runtime helper"
-$helperScriptSource = Join-Path $repoRoot '.github\installer\install-runtime-deps.ps1'
+$helperScriptSource = Join-Path $repoRoot '.github\workflows\installer\install-runtime-deps.ps1'
 $downloadVmScriptSource = Join-Path $repoRoot 'Aiden.RuntimeAgent\scripts\download-vm.ps1'
 $downloadCollectorScriptSource = Join-Path $repoRoot 'Aiden.RuntimeAgent\scripts\download-collector.ps1'
 if (-not (Test-Path $helperScriptSource)) {

@@ -145,11 +145,11 @@ jobs:
       - name: Determine release version
         id: version
         shell: pwsh
-        run: .github/scripts/resolve-version-from-tag.ps1 -Tag '${{ needs.create-prerelease.outputs.computed_tag }}'
+        run: .github/workflows/release/resolve-version-from-tag.ps1 -Tag '${{ needs.create-prerelease.outputs.computed_tag }}'
 
       - name: Build and stage release payload
         shell: pwsh
-        run: .github/scripts/build-and-stage-release.ps1 -Version '${{ steps.version.outputs.version }}' -Rid '${{ env.RID }}'
+        run: .github/workflows/release/build-and-stage-release.ps1 -Version '${{ steps.version.outputs.version }}' -Rid '${{ env.RID }}'
 
       - name: Check SignPath readiness
         shell: pwsh
@@ -160,7 +160,7 @@ jobs:
           SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
           SIGNPATH_UNSIGNED_ARTIFACT_CFG: ${{ vars.SIGNPATH_UNSIGNED_ARTIFACT_CFG }}
           SIGNPATH_INSTALLER_ARTIFACT_CFG: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CFG }}
-        run: .github/scripts/check-signpath-readiness.ps1
+        run: .github/workflows/release/check-signpath-readiness.ps1
 
       - name: Upload unsigned app binaries for SignPath
         id: upload_unsigned_apps
@@ -188,7 +188,7 @@ jobs:
         run: |
           Copy-Item -Path "artifacts/signed/apps/Aiden.TrayMonitor.exe" -Destination "artifacts/stage/tray/Aiden.TrayMonitor.exe" -Force
           Copy-Item -Path "artifacts/signed/apps/Aiden.RuntimeAgent.exe" -Destination "artifacts/stage/agent/Aiden.RuntimeAgent.exe" -Force
-          .github/scripts/build-inno-setup.ps1 -Version '${{ steps.version.outputs.version }}'
+          .github/workflows/installer/build-inno-setup.ps1 -Version '${{ steps.version.outputs.version }}'
 
       - name: Upload unsigned installer for SignPath
         id: upload_unsigned_installer
@@ -211,16 +211,16 @@ jobs:
 
       - name: Replace installer with signed output
         shell: pwsh
-        run: .github/scripts/replace-signed-artifacts.ps1 -Version '${{ steps.version.outputs.version }}'
+        run: .github/workflows/release/replace-signed-artifacts.ps1 -Version '${{ steps.version.outputs.version }}'
 
       - name: Verify signatures
         shell: pwsh
-        run: .github/scripts/verify-signatures.ps1 -Version '${{ steps.version.outputs.version }}'
+        run: .github/workflows/release/verify-signatures.ps1 -Version '${{ steps.version.outputs.version }}'
 
       - name: Generate SHA256SUMS
         shell: pwsh
-        run: .github/scripts/generate-sha256sums.ps1 -Version '${{ steps.version.outputs.version }}'
+        run: .github/workflows/release/generate-sha256sums.ps1 -Version '${{ steps.version.outputs.version }}'
 
       - name: Upload prerelease assets
         shell: pwsh
-        run: .github/scripts/upload-release-assets.ps1 -UploadUrl '${{ needs.create-prerelease.outputs.release_upload_url }}' -Version '${{ steps.version.outputs.version }}' -GitHubToken '${{ secrets.GITHUB_TOKEN }}'
+        run: .github/workflows/release/upload-release-assets.ps1 -UploadUrl '${{ needs.create-prerelease.outputs.release_upload_url }}' -Version '${{ steps.version.outputs.version }}' -GitHubToken '${{ secrets.GITHUB_TOKEN }}'

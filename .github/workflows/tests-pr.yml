@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dotnet-tests:
+  tests:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -28,11 +28,9 @@ jobs:
       - name: Restore solution
         run: dotnet restore Aiden.sln
 
-      - name: Run unit and integration tests (quick gate)
-        run: |
-          dotnet test tests/Aiden.RuntimeAgent.UnitTests/Aiden.RuntimeAgent.UnitTests.csproj -c Release --no-restore --collect:"XPlat Code Coverage" --logger "trx;LogFileName=runtimeagent-unit.trx" --results-directory artifacts/test-results/dotnet
-          dotnet test tests/Aiden.TrayMonitor.UnitTests/Aiden.TrayMonitor.UnitTests.csproj -c Release --no-restore --collect:"XPlat Code Coverage" --logger "trx;LogFileName=traymonitor-unit.trx" --results-directory artifacts/test-results/dotnet
-          dotnet test tests/Aiden.IntegrationTests/Aiden.IntegrationTests.csproj -c Release --no-restore --collect:"XPlat Code Coverage" --logger "trx;LogFileName=integration.trx" --results-directory artifacts/test-results/dotnet
+      - name: Run tests (PR Scope)
+        shell: pwsh
+        run: .\automation\tests\Invoke-TestGate.ps1 -Scope PR -InstallPester
 
       - name: Publish .NET test report
         if: always()
@@ -43,29 +41,19 @@ jobs:
           reporter: dotnet-trx
           fail-on-error: false
 
-  scripts-tests:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run scripts tests
-        shell: pwsh
-        run: .\scripts\run-script-tests.ps1 -InstallPester
-
       - name: Upload script test report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pester-test-results
-          path: artifacts/test-results/scripts/pester-scripts.xml
+          path: artifacts/test-results/scripts/pester-workflow.xml
           if-no-files-found: ignore
 
       - name: Summarize script tests
         if: always()
         shell: pwsh
         run: |
-          $reportPath = "artifacts/test-results/scripts/pester-scripts.xml"
+          $reportPath = "artifacts/test-results/scripts/pester-workflow.xml"
           if (-not (Test-Path $reportPath)) {
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Script Tests`nNo Pester report file found at \`$reportPath\`."
             exit 0

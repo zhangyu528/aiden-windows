@@ -15,7 +15,7 @@ $installed = Get-HighestPesterModule
 
 if (-not $installed -or $installed.Version.Major -lt 5) {
     if (-not $Install) {
-        throw "Pester v5 is required. Run: pwsh -ExecutionPolicy Bypass -File .\scripts\ensure-pester-v5.ps1 -Install"
+        throw "Pester v5 is required. Run: pwsh -ExecutionPolicy Bypass -File .\automation\tests\ensure-pester-v5.ps1 -Install"
     }
 
     Write-Host 'Installing Pester v5 to CurrentUser scope...'

@@ -13,4 +13,4 @@ $output = "$env:GITHUB_WORKSPACE\artifacts\installer"
   "/DAppVersion=$Version" `
   "/DSourceDir=$source" `
   "/DOutputDir=$output" `
-  ".github\installer\aiden.iss"
+  ".github\workflows\installer\aiden.iss"
