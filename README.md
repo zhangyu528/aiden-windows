@@ -12,8 +12,10 @@ Windows desktop monitoring project for Gemini CLI telemetry.
 
 ## Project Structure
 
-- `automation/tests/Aiden/`: .NET & Pester tests for Aiden components (Unit, Integration, UI)
-- `automation/tests/Workflow/`: Pester tests for CI scripts
+- `pipelines/`: CI/CD implementation scripts (Release, Installer, Notifications)
+- `tests/`: Consolidated test directory
+  - `drivers/`: .NET test runners
+  - `Pipelines/`: Pester tests for CI scripts
 - `docs/`: product/spec/design/test docs
 
 ## Quick Start
@@ -47,8 +49,8 @@ Local quick commands:
 dotnet test tests/Aiden.RuntimeAgent.UnitTests/Aiden.RuntimeAgent.UnitTests.csproj
 dotnet test tests/Aiden.TrayMonitor.UnitTests/Aiden.TrayMonitor.UnitTests.csproj
 dotnet test tests/Aiden.IntegrationTests/Aiden.IntegrationTests.csproj
-pwsh -ExecutionPolicy Bypass -File .\automation\tests\Invoke-TestGate.ps1 -Scope Nightly
-pwsh -ExecutionPolicy Bypass -File .\automation\tests\Invoke-TestGate.ps1 -Scope PR
+pwsh -ExecutionPolicy Bypass -File .\tests\Invoke-TestGate.ps1 -Scope Nightly
+pwsh -ExecutionPolicy Bypass -File .\tests\Invoke-TestGate.ps1 -Scope PR
 ```
 
 CI workflows:
@@ -73,7 +75,7 @@ pwsh -ExecutionPolicy Bypass -File .\.githooks\setup-githooks.ps1
   Install/update locally:
 
 ```pwsh
-pwsh -ExecutionPolicy Bypass -File .\automation\tests\ensure-pester-v5.ps1 -Install
+pwsh -ExecutionPolicy Bypass -File .\tests\ensure-pester-v5.ps1 -Install
 ```
 
 ## Release Signature and Integrity Verification
@@ -103,14 +105,14 @@ Compare the output hash with the corresponding line in `SHA256SUMS.txt`.
 
 ## Pre-release Publishing
 
-Use GitHub Actions workflow `.github/workflows/prerelease.yml` to create pre-releases.
+Use GitHub Actions workflow `.github/workflows/pre-release.yml` to create pre-releases.
 Detailed test matrix/report paths/troubleshooting:
 - [自动化测试-ATD](docs/自动化测试-ATD.md)
 
 ## Release
 
 Pre-release workflow:
-- `.github/workflows/prerelease.yml`
+- `.github/workflows/pre-release.yml`
 
 Code signing policy:
 - [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)

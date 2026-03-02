@@ -15,7 +15,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 Push-Location $repoRoot
 
 try {
@@ -26,6 +26,17 @@ try {
     $runWorkflow = $true
     $runIntegration = ($Scope -eq 'PR' -or $Scope -eq 'Nightly')
     $runUI = ($Scope -eq 'Nightly')
+
+    if ($Scope -eq 'Staged' -and $StagedFiles.Count -gt 0) {
+        $hasAidenChanges = $StagedFiles -match 'Aiden\.RuntimeAgent|Aiden\.TrayMonitor|tests/'
+        $hasWorkflowChanges = $StagedFiles -match 'pipelines/|tests/Pipelines/|tests/Invoke-TestGate\.ps1'
+        
+        # If we have specific files, we only run what's relevant. 
+        if ($hasAidenChanges -or $hasWorkflowChanges) {
+            $runUnit = [bool]$hasAidenChanges
+            $runWorkflow = [bool]$hasWorkflowChanges
+        }
+    }
 
     if ($Scope -eq 'PR' -or $Scope -eq 'Nightly') {
         $Configuration = 'Release'
@@ -43,7 +54,7 @@ try {
     if ($runUnit) {
         $dotnetResultsDir = Join-Path $resultsBaseDir "dotnet"
         Write-Host "Running Aiden Unit Tests..." -ForegroundColor Yellow
-        & (Join-Path $scriptDir "Aiden/Unit/run-unit-tests.ps1") `
+        & (Join-Path $scriptDir "drivers/run-unit-tests.ps1") `
             -Configuration $Configuration -NoRestore:$NoRestore -ResultsDirectory $dotnetResultsDir
     }
 
@@ -51,7 +62,7 @@ try {
     if ($runIntegration) {
         $dotnetResultsDir = Join-Path $resultsBaseDir "dotnet"
         Write-Host "Running Aiden Integration Tests..." -ForegroundColor Yellow
-        & (Join-Path $scriptDir "Aiden/Integration/run-integration-tests.ps1") `
+        & (Join-Path $scriptDir "drivers/run-integration-tests.ps1") `
             -Configuration $Configuration -NoRestore:$NoRestore -ResultsDirectory $dotnetResultsDir
     }
 
@@ -59,13 +70,13 @@ try {
     if ($runUI) {
         $uiResultsDir = Join-Path $resultsBaseDir "ui"
         Write-Host "Running Aiden UI Tests..." -ForegroundColor Yellow
-        & (Join-Path $scriptDir "Aiden/UI/run-ui-tests.ps1") `
+        & (Join-Path $scriptDir "drivers/run-ui-tests.ps1") `
             -Configuration $Configuration -NoRestore:$NoRestore -AppPath $AppPath -ResultsDirectory $uiResultsDir
     }
 
     # 4. Workflow Script Tests (Pester)
     if ($runWorkflow) {
-        Write-Host "Running Pester Tests for Workflow Scripts..." -ForegroundColor Yellow
+        Write-Host "Running Pester Tests for Automation Scripts..." -ForegroundColor Yellow
         & (Join-Path $scriptDir "ensure-pester-v5.ps1") -Install:$InstallPester
 
         $pesterResultsDir = Join-Path $resultsBaseDir "scripts"
@@ -73,7 +84,7 @@ try {
         $resultsFile = Join-Path $pesterResultsDir 'pester-workflow.xml'
 
         # Collect all Pester tests in the relevant subfolders
-        $runPaths = @("Aiden/Unit", "Aiden/Integration", "Aiden/UI", "Workflow") | ForEach-Object { Join-Path $scriptDir $_ }
+        $runPaths = @("drivers", "Pipelines") | ForEach-Object { Join-Path $scriptDir $_ }
 
         $config = New-PesterConfiguration
         $config.Run.Path = $runPaths

@@ -6,7 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 
 # Resolve AppPath if not provided
 if (-not $AppPath) {

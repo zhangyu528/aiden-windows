@@ -5,7 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 
 $testProject = Join-Path $repoRoot "tests/Aiden.IntegrationTests/Aiden.IntegrationTests.csproj"
 $restoreFlag = if ($NoRestore) { "--no-restore" } else { "" }

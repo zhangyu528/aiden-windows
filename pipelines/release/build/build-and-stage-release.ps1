@@ -34,4 +34,4 @@ dotnet publish Aiden.RuntimeAgent/Aiden.RuntimeAgent.csproj `
   /p:DebugSymbols=false `
   -o artifacts/stage/agent
 
-& .github/scripts/prepare-package.ps1 -Version $Version
+& pipelines/installer/prepare-package.ps1 -Version $Version
