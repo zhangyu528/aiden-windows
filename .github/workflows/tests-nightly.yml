@@ -55,10 +55,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pester-test-results
-          path: artifacts/test-results/scripts/pester-workflow.xml
+          path: artifacts/test-results/scripts/pester-pipeline.xml
           if-no-files-found: ignore
 
       - name: Summarize script tests
         if: always()
         shell: pwsh
-        run: pipelines/release/reporting/summarize-pester-results.ps1 -ReportPath "artifacts/test-results/scripts/pester-workflow.xml"
+        run: pipelines/release/reporting/summarize-pester-results.ps1 -ReportPath "artifacts/test-results/scripts/pester-pipeline.xml"

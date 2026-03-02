@@ -23,18 +23,18 @@ try {
     
     # Define test types based on Scope
     $runUnit = $true
-    $runWorkflow = $true
+    $runPipeline = ($Scope -ne 'PR')
     $runIntegration = ($Scope -eq 'PR' -or $Scope -eq 'Nightly')
     $runUI = ($Scope -eq 'Nightly')
 
     if ($Scope -eq 'Staged' -and $StagedFiles.Count -gt 0) {
         $hasAidenChanges = $StagedFiles -match 'Aiden\.RuntimeAgent|Aiden\.TrayMonitor|tests/'
-        $hasWorkflowChanges = $StagedFiles -match 'pipelines/|tests/Pipelines/|tests/Invoke-TestGate\.ps1'
+        $hasPipelineChanges = $StagedFiles -match 'pipelines/|tests/Pipelines/|tests/Invoke-TestGate\.ps1'
         
         # If we have specific files, we only run what's relevant. 
-        if ($hasAidenChanges -or $hasWorkflowChanges) {
+        if ($hasAidenChanges -or $hasPipelineChanges) {
             $runUnit = [bool]$hasAidenChanges
-            $runWorkflow = [bool]$hasWorkflowChanges
+            $runPipeline = [bool]$hasPipelineChanges
         }
     }
 
@@ -45,7 +45,7 @@ try {
     Write-Host "--- Aiden Unified Test Gate ---" -ForegroundColor Cyan
     Write-Host "Scope: $Scope"
     Write-Host "Configuration: $Configuration"
-    Write-Host "Tests: Unit=$runUnit, Workflow=$runWorkflow, Integration=$runIntegration, UI=$runUI"
+    Write-Host "Tests: Unit=$runUnit, Pipeline=$runPipeline, Integration=$runIntegration, UI=$runUI"
     Write-Host "---------------------------------"
 
     $scriptDir = $PSScriptRoot
@@ -74,14 +74,14 @@ try {
             -Configuration $Configuration -NoRestore:$NoRestore -AppPath $AppPath -ResultsDirectory $uiResultsDir
     }
 
-    # 4. Workflow Script Tests (Pester)
-    if ($runWorkflow) {
+    # 4. Pipeline Script Tests (Pester)
+    if ($runPipeline) {
         Write-Host "Running Pester Tests for Automation Scripts..." -ForegroundColor Yellow
         & (Join-Path $scriptDir "ensure-pester-v5.ps1") -Install:$InstallPester
 
         $pesterResultsDir = Join-Path $resultsBaseDir "scripts"
         if (-not (Test-Path $pesterResultsDir)) { New-Item -ItemType Directory -Path $pesterResultsDir -Force | Out-Null }
-        $resultsFile = Join-Path $pesterResultsDir 'pester-workflow.xml'
+        $resultsFile = Join-Path $pesterResultsDir 'pester-pipeline.xml'
 
         # Collect all Pester tests in the relevant subfolders
         $runPaths = @("drivers", "Pipelines") | ForEach-Object { Join-Path $scriptDir $_ }

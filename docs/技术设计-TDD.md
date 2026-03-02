@@ -65,7 +65,7 @@
 测试报告路径统一：
 - `artifacts/test-results/dotnet/*.trx`
 - `artifacts/test-results/ui/*.trx`
-- `artifacts/test-results/scripts/pester-workflow.xml`
+- Scripts: `artifacts/test-results/scripts/pester-pipeline.xml` (NUnit)
 
 ## 7. 限制与兼容性说明
 
