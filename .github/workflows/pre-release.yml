@@ -26,116 +26,22 @@ concurrency:
   group: prerelease-${{ inputs.channel }}-${{ inputs.base_version }}
   cancel-in-progress: false
 
-env:
-  DOTNET_VERSION: 8.0.x
-  RID: win-x64
-
 jobs:
   prerelease:
-    runs-on: windows-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Compute next prerelease tag
-        id: next_tag
-        shell: pwsh
-        run: pipelines/release/versioning/compute-next-tag.ps1 -BaseVersion '${{ inputs.base_version }}' -Channel '${{ inputs.channel }}'
-
-      - name: Determine release version
-        id: version
-        shell: pwsh
-        run: pipelines/release/versioning/resolve-version-from-tag.ps1 -Tag '${{ steps.next_tag.outputs.computed_tag }}'
-
-      - name: Build and stage release payload
-        shell: pwsh
-        run: pipelines/release/build/build-and-stage-release.ps1 -Version '${{ steps.version.outputs.version }}' -Rid '${{ env.RID }}'
-
-      - name: Check SignPath readiness
-        shell: pwsh
-        env:
-          SIGNPATH_READY: ${{ vars.SIGNPATH_READY }}
-          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
-          SIGNPATH_UNSIGNED_ARTIFACT_CFG: ${{ vars.SIGNPATH_UNSIGNED_ARTIFACT_CFG }}
-          SIGNPATH_INSTALLER_ARTIFACT_CFG: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CFG }}
-        run: pipelines/release/signing/check-signpath-readiness.ps1
-
-      - name: Upload unsigned app binaries for SignPath
-        id: upload_unsigned_apps
-        uses: actions/upload-artifact@v4
-        with:
-          name: unsigned-app-binaries-${{ steps.next_tag.outputs.computed_tag }}
-          path: |
-            artifacts/stage/tray/Aiden.TrayMonitor.exe
-            artifacts/stage/agent/Aiden.RuntimeAgent.exe
-
-      - name: Sign app binaries via SignPath
-        id: sign_apps
-        uses: signpath/github-action-submit-signing-request@v2
-        with:
-          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
-          artifact-configuration-slug: ${{ vars.SIGNPATH_UNSIGNED_ARTIFACT_CFG }}
-          github-artifact-id: ${{ steps.upload_unsigned_apps.outputs.artifact-id }}
-          wait-for-completion: true
-          output-artifact-directory: artifacts/signed/apps
-
-      - name: Build Inno Setup installer
-        shell: pwsh
-        run: pipelines/installer/invoke-installer-build.ps1 -Version '${{ steps.version.outputs.version }}'
-
-      - name: Upload unsigned installer for SignPath
-        id: upload_unsigned_installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: unsigned-installer-${{ steps.next_tag.outputs.computed_tag }}
-          path: artifacts/installer/Aiden-Setup-${{ steps.version.outputs.version }}-win-x64.exe
-
-      - name: Sign installer via SignPath
-        id: sign_installer
-        uses: signpath/github-action-submit-signing-request@v2
-        with:
-          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
-          artifact-configuration-slug: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CFG }}
-          github-artifact-id: ${{ steps.upload_unsigned_installer.outputs.artifact-id }}
-          wait-for-completion: true
-          output-artifact-directory: artifacts/signed/installer
-
-      - name: Replace installer with signed output
-        shell: pwsh
-        run: pipelines/release/signing/replace-signed-artifacts.ps1 -Version '${{ steps.version.outputs.version }}'
-
-      - name: Verify signatures
-        shell: pwsh
-        run: pipelines/release/signing/verify-signatures.ps1 -Version '${{ steps.version.outputs.version }}'
-
-      - name: Generate SHA256SUMS
-        shell: pwsh
-        run: pipelines/release/build/generate-sha256sums.ps1 -Version '${{ steps.version.outputs.version }}'
-
-      - name: Create GitHub pre-release
-        id: create_release
-        shell: pwsh
-        run: pipelines/release/publishing/create-github-release.ps1 -Tag '${{ steps.next_tag.outputs.computed_tag }}'
-
-      - name: Upload prerelease assets
-        shell: pwsh
-        run: pipelines/release/publishing/upload-release-assets.ps1 -UploadUrl '${{ steps.create_release.outputs.release_upload_url }}' -Version '${{ steps.version.outputs.version }}' -GitHubToken '${{ secrets.GITHUB_TOKEN }}'
-
-      - name: Summary
-        shell: pwsh
-        run: pipelines/release/reporting/print-prerelease-summary.ps1 -Tag "${{ steps.next_tag.outputs.computed_tag }}" -ReleaseUrl "${{ steps.create_release.outputs.release_url }}"
+    uses: zhangyu528/release-actions/.github/workflows/pre-release-entry.yml@main
+    with:
+      platform: windows
+      base_version: ${{ inputs.base_version }}
+      channel: ${{ inputs.channel }}
+      dotnet_version: 8.0.x
+      windows_rid: win-x64
+      windows_solution_path: Aiden.sln
+      windows_icon_source: Aiden.TrayMonitor/Assets/aiden.ico
+      windows_helper_script_sources: |
+        Aiden.RuntimeAgent/scripts/download-vm.ps1
+        Aiden.RuntimeAgent/scripts/download-collector.ps1
+      windows_postinstall_launch_exe: Aiden.TrayMonitor.exe
+      windows_autorun_exe: Aiden.RuntimeAgent.exe
+    secrets:
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+      signpath_api_token: ${{ secrets.SIGNPATH_API_TOKEN }}

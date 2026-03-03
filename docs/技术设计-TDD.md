@@ -32,7 +32,6 @@
 ### 3.3 脚本与流程
 - `tests/`: 统一测试目录
   - `drivers/`: 产品逻辑测试驱动 (Unit, Integration, UI)
-  - `Pipelines/`: CI 脚本 Pester 用例目录
 - `.github/workflows/build.yml`：手动编译校验
 - `.github/workflows/tests-pr.yml`：PR 测试
 - `.github/workflows/tests-nightly.yml`：Nightly 测试
@@ -65,7 +64,6 @@
 测试报告路径统一：
 - `artifacts/test-results/dotnet/*.trx`
 - `artifacts/test-results/ui/*.trx`
-- Scripts: `artifacts/test-results/scripts/pester-pipeline.xml` (NUnit)
 
 ## 7. 限制与兼容性说明
 

@@ -16,6 +16,7 @@ Signing runs only in the GitHub Actions pre-release workflow:
 
 - Workflow: `.github/workflows/pre-release.yml`
 - Trigger: `workflow_dispatch` with inputs `base_version` and `channel` (`alpha`/`beta`/`rc`)
+- Rule: only `channel=rc` performs SignPath signing
 - Provider: SignPath signing request pipeline
 
 Final release publication is done by promoting a validated pre-release in GitHub (turning off the prerelease flag) without rebuilding signed artifacts.
@@ -24,7 +25,7 @@ No signing is performed for pull requests or arbitrary branch pushes.
 
 ## SignPath Onboarding Requirements
 
-Set the following GitHub repository variables before enabling signing (`SIGNPATH_READY=true`):
+Set the following GitHub repository variables before enabling RC signing:
 
 - `SIGNPATH_ORGANIZATION_ID`
 - `SIGNPATH_PROJECT_SLUG`
@@ -60,4 +61,3 @@ Consumers should verify both:
 Installer runtime dependency downloads (VictoriaMetrics and OpenTelemetry Collector) require SHA256 verification.
 
 If checksum resolution or verification fails, installation fails by default.
-

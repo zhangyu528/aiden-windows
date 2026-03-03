@@ -30,7 +30,7 @@ jobs:
 
       - name: Run tests (Nightly Scope)
         shell: pwsh
-        run: .\tests\Invoke-TestGate.ps1 -Scope Nightly -InstallPester
+        run: .\tests\Invoke-TestGate.ps1 -Scope Nightly
 
       - name: Publish .NET test report
         if: always()
@@ -49,16 +49,3 @@ jobs:
           path: artifacts/test-results/ui/**/*.trx
           reporter: dotnet-trx
           fail-on-error: false
-
-      - name: Upload script test report artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pester-test-results
-          path: artifacts/test-results/scripts/pester-pipeline.xml
-          if-no-files-found: ignore
-
-      - name: Summarize script tests
-        if: always()
-        shell: pwsh
-        run: pipelines/release/reporting/summarize-pester-results.ps1 -ReportPath "artifacts/test-results/scripts/pester-pipeline.xml"

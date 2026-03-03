@@ -38,12 +38,6 @@ dotnet test tests/Aiden.IntegrationTests/Aiden.IntegrationTests.csproj -c Releas
 pwsh -ExecutionPolicy Bypass -File .\tests\Invoke-TestGate.ps1 -Scope Nightly -AppPath "path/to/app"
 ```
 
-### 3.3 脚本测试（Pester）
-
-```pwsh
-pwsh -ExecutionPolicy Bypass -File .\tests\Invoke-TestGate.ps1 -Scope Staged -InstallPester
-```
-
 ## 4. CI 流程
 
 ### 4.1 Build（手动编译校验）
@@ -60,20 +54,18 @@ Workflow：`.github/workflows/build.yml`
 Workflow：`.github/workflows/tests-pr.yml`
 
 - 触发：`pull_request`、`push main`
-- Job：`dotnet-tests`、`scripts-tests`
+- Job：`tests`
 - 报告：
   - .NET 通过 `dorny/test-reporter@v2` 解析 TRX
-  - scripts 上传 XML 并写入 Summary
 
 ### 4.3 Nightly Tests
 
 Workflow：`.github/workflows/tests-nightly.yml`
 
 - 触发：定时 + 手动
-- Job：`dotnet-tests`、`ui-tests`、`scripts-tests`
+- Job：`tests`
 - 报告：
   - .NET/UI 通过 `dorny/test-reporter@v2`
-  - scripts 上传 XML 并写入 Summary
 
 ### 4.4 Feishu Notification
 
@@ -94,24 +86,21 @@ artifacts/
       *.trx
     ui/
       *.trx
-    scripts/
-      pester-scripts.xml
 ```
 
 ## 6. 常见问题与排障
 
-### 6.1 PR 上看到两个 checks
+### 6.1 PR 上看到测试检查
 
-这是正常行为，`tests-pr.yml` 定义了两个 job：`dotnet-tests` 与 `scripts-tests`。
+这是正常行为，`tests-pr.yml` 会输出 .NET 测试检查。
 
 ### 6.2 UI 用例有 skip
 
 `Aiden.UI.Tests` 中部分 smoke 用例依赖交互式桌面，默认可能跳过。
 
-### 6.3 为什么同时有 TRX 和 XML
+### 6.3 为什么看到不同 TRX 文件
 
-- .NET 测试输出 TRX
-- Pester 输出 NUnit XML
+- .NET Unit / Integration / UI 都输出 TRX，但目录不同。
 
 ### 6.4 Feishu workflow 报脚本找不到
 
