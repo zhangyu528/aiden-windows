@@ -13,10 +13,8 @@ Windows desktop monitoring project for Gemini CLI telemetry.
 
 ## Project Structure
 
-- `pipelines/`: CI/CD implementation scripts (Release, Installer, Notifications)
 - `tests/`: Consolidated test directory
   - `drivers/`: .NET test runners
-  - `Pipelines/`: Pester tests for CI scripts
 - `docs/`: product/spec/design/test docs
 
 ## Quick Start
@@ -71,13 +69,6 @@ pwsh -ExecutionPolicy Bypass -File .\.githooks\setup-githooks.ps1
 - Gate script: `.githooks/pre-commit-gate.ps1`
 - Fast checks run on staged changes only:
   - impacted project build + unit tests
-  - script tests via Pester
-- Pre-commit script tests require Pester v5.
-  Install/update locally:
-
-```pwsh
-pwsh -ExecutionPolicy Bypass -File .\tests\ensure-pester-v5.ps1 -Install
-```
 
 ## Release Signature and Integrity Verification
 

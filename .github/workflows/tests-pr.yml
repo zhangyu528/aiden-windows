@@ -30,7 +30,7 @@ jobs:
 
       - name: Run tests (PR Scope)
         shell: pwsh
-        run: .\tests\Invoke-TestGate.ps1 -Scope PR -InstallPester
+        run: .\tests\Invoke-TestGate.ps1 -Scope PR
 
       - name: Publish .NET test report
         if: always()
