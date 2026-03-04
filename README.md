@@ -107,6 +107,8 @@ Detailed test matrix/report paths/troubleshooting:
 Pre-release workflow:
 - `.github/workflows/pre-release.yml`
 
+Runtime helper scripts (including `install-runtime-deps.ps1`, `download-vm.ps1`, `download-collector.ps1`) live under `scripts/runtime-deps/`. The release workflow stages that directory wholesale into the installer so it can download runtime dependencies at post-install time.
+
 Code signing policy:
 - [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)
 
