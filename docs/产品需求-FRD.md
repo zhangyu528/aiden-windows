@@ -7,7 +7,7 @@
 ## 2. 产品目标
 
 - 在 Windows 提供低打扰托盘监控体验。
-- 面向 Gemini/Codex/Claude Code CLI 用户展示核心 telemetry 消耗信息。
+- 面向 Gemini/Codex/Claude Code Code CLI 用户展示核心 telemetry 消耗信息。
 - 在 UI 关闭后仍保持后台采集连续性。
 
 ## 3. 用户与场景
@@ -24,7 +24,7 @@
 ## 4. 范围
 
 In Scope：
-- 托盘主面板与多 CLI 页签（Gemini/Codex/Claude）
+- 托盘主面板与多 CLI 页签（Gemini/Codex/Claude Code）
 - 关键指标展示（Input/Output/User/Active/Cost/Context/Status）
 - 手动刷新与自动刷新
 - 首次引导与 CLI 开通配置管理
@@ -44,14 +44,15 @@ Out of Scope：
 - 自动刷新按配置周期执行。
 
 ### 5.2 多 CLI 页签
-- 提供 Gemini/Codex/Claude 三个页签。
+- 提供 Gemini/Codex/Claude Code 三个页签。
 - 页签可用前提：对应 CLI 已安装且已开通。
 - 不可用页签禁用不可点击。
 - 当前页签失效时自动回退到可用页签。
 
 ### 5.3 指标显示规则
+- User Active：显示用户的活跃时间跨度（从首次上报到最后一次上报的天数）。
 - 当前用户未知时，用户相关字段显示 `Unknown` 或 `N/A`。
-- 采集链路异常时，状态显示 `Offline`。
+- 采集链路异常时，状态显示 `OFFLINE`。
 
 ### 5.4 后台连续采集
 - UI 退出后后台采集持续运行。

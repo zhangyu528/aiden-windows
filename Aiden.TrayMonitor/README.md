@@ -16,7 +16,7 @@ dotnet run
 - Right-click menu: Refresh / Show-Hide / Exit
 - Auto-hide panel on focus loss
 - Show latest reported user email (`user.email`, fallback `Unknown`)
-- Show user active age in days since latest sample (fallback `N/A`)
+- Show user active span in days (first to last activity, fallback `N/A`)
 - Auto-start VictoriaMetrics from `Aiden.RuntimeAgent/runtime/vm/<version>/victoria-metrics.exe` if not already running
 - Auto-start OTel Collector from `Aiden.RuntimeAgent/runtime/collector/<version>/otelcol-contrib.exe` if available
 - Poll VictoriaMetrics every 5 seconds
@@ -102,7 +102,8 @@ Latest user rule:
 - If instant has no sample, it falls back to:
   `topk(1, max by (user.email) (timestamp(last_over_time(gen_ai.client.token.usage_sum{service.name="<filter>",user.email!=""}[<MaxHistoryDays>d]))))`
 - If no user email exists, it shows `Unknown`.
-- User active value is computed from the same timestamp as `floor(now - latestSampleTime)` in days.
+- User active value is computed as `floor((tmax_over_time - tmin_over_time) / 86400) + 1` days.
+  It represents the span of activity from the first sample to the last sample within `Vm.MaxHistoryDays`.
 - If current user is `Unknown`, user active time is shown as `N/A`.
 
 Context rule:

@@ -43,7 +43,7 @@ public sealed class VmClient
 
             var context = await QueryContextForUserAsync(latestUser.Email, lookbackDays, cancellationToken);
             var isKnownUser = !string.Equals(latestUser.Email, "Unknown", StringComparison.OrdinalIgnoreCase);
-            var userActiveAtText = BuildUserActiveDaysText(isKnownUser, latestUser.ActiveAt);
+            var activeDaysSpan = await QueryActiveSpanDaysAsync(latestUser.Email, ResolveMaxHistoryDays(), cancellationToken);
 
             return new TelemetrySnapshot
             {
@@ -52,7 +52,7 @@ public sealed class VmClient
                 InputText = isKnownUser ? FormatCompactTokenValue(inputTask.Result) : "N/A",
                 OutputText = isKnownUser ? FormatCompactTokenValue(outputTask.Result) : "N/A",
                 CurrentUserEmail = latestUser.Email,
-                UserActiveAtText = userActiveAtText,
+                UserActiveAtText = activeDaysSpan,
                 SessionCostUsd = costTask.Result,
                 ContextWindowM = context.ContextWindowM,
                 ContextPercent = context.ContextPercent,
@@ -334,21 +334,36 @@ public sealed class VmClient
         return DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
     }
 
-    private static string BuildUserActiveDaysText(bool isKnownUser, DateTimeOffset? activeAt)
+    private async Task<string> QueryActiveSpanDaysAsync(string userEmail, int fallbackDays, CancellationToken cancellationToken)
     {
-        if (!isKnownUser || !activeAt.HasValue)
+        if (string.Equals(userEmail, "Unknown", StringComparison.OrdinalIgnoreCase))
         {
             return "N/A";
         }
 
-        var elapsed = DateTimeOffset.Now - activeAt.Value;
-        var days = (int)Math.Floor(elapsed.TotalDays);
-        if (days < 0)
+        var query = BuildActiveSpanQuery(userEmail, fallbackDays);
+        var result = await QueryResultAsync(query, cancellationToken);
+
+        if (result.ValueKind != JsonValueKind.Array || result.GetArrayLength() == 0)
         {
-            days = 0;
+            return "N/A";
         }
 
+        if (!TryParseVectorValue(result[0], out var seconds))
+        {
+            return "N/A";
+        }
+
+        var days = (int)Math.Floor(seconds / 86400d) + 1;
         return $"{days} days";
+    }
+
+    private string BuildActiveSpanQuery(string userEmail, int fallbackDays)
+    {
+        var escapedServiceName = EscapePromQlLabelValue(GetServiceNameFilter());
+        var escapedUser = EscapePromQlLabelValue(userEmail);
+        var days = Math.Max(1, fallbackDays);
+        return $"(tmax_over_time(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\"}}[{days}d]) - tmin_over_time(gen_ai.client.token.usage_sum{{service.name=\"{escapedServiceName}\",user.email=\"{escapedUser}\"}}[{days}d]))";
     }
 
     private async Task<(double ContextWindowM, string ContextText, double ContextPercent)> QueryContextForUserAsync(string userEmail, int fallbackDays, CancellationToken cancellationToken)

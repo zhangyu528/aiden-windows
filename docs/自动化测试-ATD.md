@@ -24,7 +24,16 @@
 - .NET 8 SDK
 - PowerShell 7 (`pwsh`)
 
-### 3.1 .NET 单元与集成
+### 3.1 变更感知逻辑 (Change-aware)
+
+`Invoke-TestGate.ps1` 具备变更感知能力。在 `Staged` 或 `PR` 作用域下，若提供了变更文件列表（如通过 `$StagedFiles` 参数），脚本将根据文件路径模式自动判定需运行的测试子集：
+- **Unit**: 匹配 `Aiden.RuntimeAgent/`, `Aiden.TrayMonitor/` 等。
+- **Integration**: 匹配 `Aiden.RuntimeAgent/`, `Aiden.IntegrationTests/` 等。
+- **UI**: 匹配 `Aiden.TrayMonitor/`, `Aiden.UI.Tests/` 等。
+
+若无相关变更，将自动跳过对应测试以提升效率。
+
+### 3.2 .NET 单元与集成
 
 ```pwsh
 dotnet test tests/Aiden.RuntimeAgent.UnitTests/Aiden.RuntimeAgent.UnitTests.csproj -c Release --logger "trx;LogFileName=runtimeagent-unit.trx" --results-directory artifacts/test-results/dotnet

@@ -23,6 +23,9 @@ public partial class TrayPanelViewModel : ObservableObject
     [ObservableProperty] private double _contextPercent;
     [ObservableProperty] private string _contextText = "N/A";
     [ObservableProperty] private string _currentUserEmail = "Unknown";
+    /// <summary>
+    /// Cumulative active days span (first to last)
+    /// </summary>
     [ObservableProperty] private string _userActiveAtText = "N/A";
     [ObservableProperty] private bool _isOnline;
     [ObservableProperty] private string _statusText = "Offline";
