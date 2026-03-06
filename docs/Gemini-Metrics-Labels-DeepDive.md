@@ -64,7 +64,7 @@
 常见标签：
 
 - `service.name`
-- `gen_ai.token.type`
+- `gen_ai.token.type` (input/output/cached)
 - `user.email`
 - `session.id`
 - `gen_ai.request.model`
@@ -86,7 +86,7 @@ Gemini CLI 原生上报采用 OTLP 数据模型，是分层结构，不是扁平
 
 典型理解：
 - `service.name/user/session/model` 常在 resource 层
-- `gen_ai.token.type` 常在 datapoint 层
+- `gen_ai.token.type` 常在 datapoint 层 (包含 input/output/cached)
 - 值在 datapoint 层（例如 usage 数值）
 
 ---
@@ -229,6 +229,14 @@ Gemini 指标链路里，真正变化主要是“数据表示与查询口径”�
 - Output 查询：35
 - 不加 token.type 的 sum：155（input+output）
 
+### 10.4 缓存处理（Context 扣减逻辑）
+在部分 CLI（如 Codex）中，上报会包含 `cached` 类型的 token（例如 `cached_token_count` 映射为 `gen_ai.token.type="cached"`）。
+
+**Context 核心公式**：
+`Used Tokens = sum(input) - sum(cached)`
+
+这样设计是为了让面板展示的 `Context` 指标能更准确反映“新注入（非重用）”的上下文负载。
+
 > 这就是为什么“是否过滤 `gen_ai.token.type`”会直接改变业务口径。
 
 ---
@@ -319,7 +327,11 @@ sum by (service.name, gen_ai.token.type) (last_over_time(gen_ai.client.token.usa
 ```promql
 sum by (gen_ai.token.type) (last_over_time(gen_ai.client.token.usage_sum{service.name="gemini-cli"}[1d]))
 ```
-3. 锁定用户：
+3. 校验 cached 消耗：
+```promql
+sum(last_over_time(gen_ai.client.token.usage_sum{gen_ai.token.type="cached"}[1d]))
+```
+4. 锁定用户：
 ```promql
 sum by (gen_ai.token.type) (last_over_time(gen_ai.client.token.usage_sum{service.name="gemini-cli",user.email="alice@example.com"}[1d]))
 ```

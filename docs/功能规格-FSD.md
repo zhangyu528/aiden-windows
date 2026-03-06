@@ -19,10 +19,10 @@
 - Input Tokens
 - Output Tokens
 - Current User Email
-- User Active
+- User Active (Days Span)
 - Cost USD
 - Context（值 + %）
-- Status（Online/Offline）
+- Status（ONLINE/OFFLINE）
 
 ### 3.2 触发与刷新
 - 自动刷新按配置周期执行。
